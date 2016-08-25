@@ -3,12 +3,12 @@ package grants
 //go:generate go-bindata -pkg $GOPACKAGE -o migrations.go sql/
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"code.impractical.co/pqarrays"
 	"github.com/pborman/uuid"
-	"golang.org/x/net/context"
 )
 
 var (

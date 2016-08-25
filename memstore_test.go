@@ -1,6 +1,6 @@
 package grants
 
-import "golang.org/x/net/context"
+import "context"
 
 func init() {
 	storerFactories = append(storerFactories, MemstoreFactory{})

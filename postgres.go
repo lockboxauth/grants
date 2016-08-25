@@ -1,6 +1,7 @@
 package grants
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/lib/pq"
@@ -8,7 +9,6 @@ import (
 	"github.com/pborman/uuid"
 
 	"darlinggo.co/pan"
-	"golang.org/x/net/context"
 )
 
 type Postgres struct {
@@ -24,17 +24,16 @@ func (g Grant) GetSQLTableName() string {
 }
 
 func createGrantSQL(grant Grant) *pan.Query {
-	fields, values := pan.GetFields(grant)
-	query := pan.New(pan.POSTGRES, "INSERT INTO "+pan.GetTableName(grant))
-	query.Include("(" + pan.QueryList(fields) + ")")
-	query.Include("VALUES")
-	query.Include("("+pan.VariableList(len(values))+")", values...)
-	return query.FlushExpressions(" ")
+	return pan.Insert(grant)
 }
 
 func (p Postgres) CreateGrant(ctx context.Context, grant Grant) error {
 	query := createGrantSQL(grant)
-	_, err := p.db.Exec(query.String(), query.Args...)
+	queryStr, err := query.PostgreSQLString()
+	if err != nil {
+		return err
+	}
+	_, err = p.db.Exec(queryStr, query.Args()...)
 	if e, ok := err.(*pq.Error); ok {
 		if e.Constraint == "grants_pkey" {
 			err = ErrGrantAlreadyExists
@@ -47,27 +46,29 @@ func (p Postgres) CreateGrant(ctx context.Context, grant Grant) error {
 
 func exchangeGrantUpdateSQL(id uuid.UUID) *pan.Query {
 	var grant Grant
-	query := pan.New(pan.POSTGRES, "UPDATE "+pan.GetTableName(grant)+" SET ")
-	query.Include(pan.GetUnquotedColumn(grant, "Used")+" = ?", true)
-	query.IncludeWhere()
-	query.FlushExpressions(" ")
-	query.Include(pan.GetUnquotedColumn(grant, "ID")+" = ?", id)
-	query.Include(pan.GetUnquotedColumn(grant, "Used")+" = ?", false)
-	return query.FlushExpressions(" AND ")
+	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
+	query.Comparison(grant, "Used", "=", true)
+	query.Where().Flush(" ")
+	query.Comparison(grant, "ID", "=", id)
+	query.Comparison(grant, "Used", "=", false)
+	return query.Flush(" AND ")
 }
 
 func exchangeGrantGetSQL(id uuid.UUID) *pan.Query {
 	var grant Grant
-	fields, _ := pan.GetFields(grant)
-	query := pan.New(pan.POSTGRES, "SELECT "+pan.QueryList(fields)+" FROM "+pan.GetTableName(grant))
-	query.IncludeWhere()
-	query.Include(pan.GetUnquotedColumn(grant, "ID")+" = ?", id)
-	return query.FlushExpressions(" ")
+	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
+	query.Where()
+	query.Comparison(grant, "ID", "=", id)
+	return query.Flush(" ")
 }
 
 func (p Postgres) ExchangeGrant(ctx context.Context, id uuid.UUID) (Grant, error) {
 	query := exchangeGrantUpdateSQL(id)
-	result, err := p.db.Exec(query.String(), query.Args...)
+	queryStr, err := query.PostgreSQLString()
+	if err != nil {
+		return Grant{}, err
+	}
+	result, err := p.db.Exec(queryStr, query.Args()...)
 	if err != nil {
 		return Grant{}, err
 	}
@@ -76,7 +77,11 @@ func (p Postgres) ExchangeGrant(ctx context.Context, id uuid.UUID) (Grant, error
 		return Grant{}, err
 	}
 	query = exchangeGrantGetSQL(id)
-	rows, err := p.db.Query(query.String(), query.Args...)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return Grant{}, err
+	}
+	rows, err := p.db.Query(queryStr, query.Args()...)
 	if err != nil {
 		return Grant{}, err
 	}

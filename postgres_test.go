@@ -1,6 +1,7 @@
 package grants
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/pborman/uuid"
 	"github.com/rubenv/sql-migrate"
-
-	"golang.org/x/net/context"
 )
 
 func init() {

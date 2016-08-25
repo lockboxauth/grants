@@ -1,9 +1,8 @@
 package grants
 
 import (
+	"context"
 	"sync"
-
-	"golang.org/x/net/context"
 
 	"github.com/pborman/uuid"
 )

@@ -1,7 +1,9 @@
 package grants
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,8 +12,6 @@ import (
 
 	"code.impractical.co/pqarrays"
 	"github.com/pborman/uuid"
-
-	"golang.org/x/net/context"
 )
 
 type StorerFactory interface {
@@ -77,32 +77,36 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error creating Storer from %T: %+v\n", factory, err)
 		}
+		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
+			t.Parallel()
+			ctx, storer := ctx, storer
 
-		grant := Grant{
-			ID:         uuid.NewRandom(),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndExchangeGrant",
-			CreatedAt:  time.Now().Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			ClientID:   "testrunner",
-			IP:         "192.168.1.2",
-		}
-		err = storer.CreateGrant(ctx, grant)
-		if err != nil {
-			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
-		}
+			grant := Grant{
+				ID:         uuid.NewRandom(),
+				SourceType: "manual",
+				SourceID:   "TestCreateAndExchangeGrant",
+				CreatedAt:  time.Now().Round(time.Millisecond),
+				Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+				ProfileID:  "tester",
+				ClientID:   "testrunner",
+				IP:         "192.168.1.2",
+			}
+			err = storer.CreateGrant(ctx, grant)
+			if err != nil {
+				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+			}
 
-		resp, err := storer.ExchangeGrant(ctx, grant.ID)
-		if err != nil {
-			t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
-		}
-		expectation := grant
-		expectation.Used = true
-		ok, field, expected, result := compareGrants(expectation, resp)
-		if !ok {
-			t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
-		}
+			resp, err := storer.ExchangeGrant(ctx, grant.ID)
+			if err != nil {
+				t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
+			}
+			expectation := grant
+			expectation.Used = true
+			ok, field, expected, result := compareGrants(expectation, resp)
+			if !ok {
+				t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
+			}
+		})
 	}
 }
 
@@ -115,30 +119,35 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			t.Fatalf("Error creating Storer from %T: %+v\n", factory, err)
 		}
 
-		grant := Grant{
-			ID:         uuid.NewRandom(),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndExchangeUsedGrant",
-			CreatedAt:  time.Now().Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			ClientID:   "testrunner",
-			IP:         "192.168.1.2",
-		}
-		err = storer.CreateGrant(ctx, grant)
-		if err != nil {
-			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
-		}
+		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
+			t.Parallel()
+			ctx, storer := ctx, storer
 
-		_, err = storer.ExchangeGrant(ctx, grant.ID)
-		if err != nil {
-			t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
-		}
+			grant := Grant{
+				ID:         uuid.NewRandom(),
+				SourceType: "manual",
+				SourceID:   "TestCreateAndExchangeUsedGrant",
+				CreatedAt:  time.Now().Round(time.Millisecond),
+				Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+				ProfileID:  "tester",
+				ClientID:   "testrunner",
+				IP:         "192.168.1.2",
+			}
+			err = storer.CreateGrant(ctx, grant)
+			if err != nil {
+				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+			}
 
-		_, err = storer.ExchangeGrant(ctx, grant.ID)
-		if err != ErrGrantAlreadyUsed {
-			t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyUsed, storer, err)
-		}
+			_, err = storer.ExchangeGrant(ctx, grant.ID)
+			if err != nil {
+				t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
+			}
+
+			_, err = storer.ExchangeGrant(ctx, grant.ID)
+			if err != ErrGrantAlreadyUsed {
+				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyUsed, storer, err)
+			}
+		})
 	}
 }
 
@@ -150,11 +159,15 @@ func TestExchangeNonExistentGrant(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error creating Storer from %T: %+v\n", factory, err)
 		}
+		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
+			t.Parallel()
+			ctx, storer := ctx, storer
 
-		_, err = storer.ExchangeGrant(ctx, uuid.NewRandom())
-		if err != ErrGrantNotFound {
-			t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantNotFound, storer, err)
-		}
+			_, err = storer.ExchangeGrant(ctx, uuid.NewRandom())
+			if err != ErrGrantNotFound {
+				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantNotFound, storer, err)
+			}
+		})
 	}
 }
 
@@ -166,28 +179,32 @@ func TestCreateDuplicateGrant(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error creating Storer from %T: %+v\n", factory, err)
 		}
+		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
+			t.Parallel()
+			ctx, storer := ctx, storer
 
-		grant := Grant{
-			ID:         uuid.NewRandom(),
-			SourceType: "manual",
-			SourceID:   "TestCreateDuplicateGrant",
-			CreatedAt:  time.Now().Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			ClientID:   "testrunner",
-			IP:         "192.168.1.2",
-		}
-		err = storer.CreateGrant(ctx, grant)
-		if err != nil {
-			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
-		}
+			grant := Grant{
+				ID:         uuid.NewRandom(),
+				SourceType: "manual",
+				SourceID:   "TestCreateDuplicateGrant",
+				CreatedAt:  time.Now().Round(time.Millisecond),
+				Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+				ProfileID:  "tester",
+				ClientID:   "testrunner",
+				IP:         "192.168.1.2",
+			}
+			err = storer.CreateGrant(ctx, grant)
+			if err != nil {
+				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+			}
 
-		grant.SourceID += "!"
+			grant.SourceID += "!"
 
-		err = storer.CreateGrant(ctx, grant)
-		if err != ErrGrantAlreadyExists {
-			t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyExists, storer, err)
-		}
+			err = storer.CreateGrant(ctx, grant)
+			if err != ErrGrantAlreadyExists {
+				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyExists, storer, err)
+			}
+		})
 	}
 }
 
@@ -199,27 +216,31 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error creating Storer from %T: %+v\n", factory, err)
 		}
+		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
+			t.Parallel()
+			ctx, storer := ctx, storer
 
-		grant := Grant{
-			ID:         uuid.NewRandom(),
-			SourceType: "manual",
-			SourceID:   "TestCreateDuplicateSourceGrant",
-			CreatedAt:  time.Now().Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			ClientID:   "testrunner",
-			IP:         "192.168.1.2",
-		}
-		err = storer.CreateGrant(ctx, grant)
-		if err != nil {
-			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
-		}
+			grant := Grant{
+				ID:         uuid.NewRandom(),
+				SourceType: "manual",
+				SourceID:   "TestCreateDuplicateSourceGrant",
+				CreatedAt:  time.Now().Round(time.Millisecond),
+				Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+				ProfileID:  "tester",
+				ClientID:   "testrunner",
+				IP:         "192.168.1.2",
+			}
+			err = storer.CreateGrant(ctx, grant)
+			if err != nil {
+				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+			}
 
-		grant.ID = uuid.NewRandom()
+			grant.ID = uuid.NewRandom()
 
-		err = storer.CreateGrant(ctx, grant)
-		if err != ErrGrantSourceAlreadyUsed {
-			t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantSourceAlreadyUsed, storer, err)
-		}
+			err = storer.CreateGrant(ctx, grant)
+			if err != ErrGrantSourceAlreadyUsed {
+				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantSourceAlreadyUsed, storer, err)
+			}
+		})
 	}
 }
