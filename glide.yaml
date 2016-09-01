@@ -1,0 +1,25 @@
+package: code.impractical.co/grants
+homepage: code.impractical.co/grants
+license: MIT
+description: Package grants provides logic for creating an authorization grant and exchanging an authorization grant for an access token.
+import:
+- package: code.impractical.co/pqarrays
+  version: e02237bd0f22fbf34ddfc1ecdedde1c62124a483
+  repo: git://github.com/impractical/pqarrays.git
+  vcs: git
+- package: darlinggo.co/pan
+  version: ^0.1.0
+  vcs: git
+  repo: git://github.com/darlinggo/pan.git
+- package: github.com/lib/pq
+  version: 80f8150043c80fb52dee6bc863a709cdac7ec8f8
+  subpackages:
+  - oid
+- package: github.com/pborman/uuid
+  version: b984ec7fa9ff9e428bd0cf0abf429384dfbe3e37
+- package: github.com/rubenv/sql-migrate
+  version: 6f4757563362064790a6687a6b60f182062c8634
+  subpackages:
+  - sqlparse
+- package: gopkg.in/gorp.v1
+  version: ^1.7.1
