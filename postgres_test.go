@@ -34,6 +34,7 @@ type PostgresFactory struct {
 func (p *PostgresFactory) NewStorer(ctx context.Context) (Storer, error) {
 	u, err := url.Parse(os.Getenv("PG_TEST_DB"))
 	if err != nil {
+		log.Printf("Error parsing PG_TEST_DB as a URL: %+v\n", err)
 		return nil, err
 	}
 	if u.Scheme != "postgres" {
@@ -44,13 +45,14 @@ func (p *PostgresFactory) NewStorer(ctx context.Context) (Storer, error) {
 
 	_, err = p.db.Exec("CREATE DATABASE " + table + ";")
 	if err != nil {
+		log.Printf("Error creating database %s: %+v\n", database, err)
 		return nil, err
 	}
 
 	u.Path = "/" + table
 	newConn, err := sql.Open("postgres", u.String())
 	if err != nil {
-		log.Println("Accidentally orphaned", u.String(), "it will need to be cleaned up manually")
+		log.Println("Accidentally orphaned", table, "it will need to be cleaned up manually")
 		return nil, err
 	}
 
