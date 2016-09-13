@@ -5,4 +5,4 @@ PACKAGE_PREFIX=code.impractical.co/grants
 source vendor/darlinggo.co/version/ldflags.sh
 
 # build the binary
-CGO_ENABLED=$CGO_ENABLED GOOS=$GOOS GOARCH=$GOARCH go build -o ./tokensd/tokensd -ldflags "${LDFLAGS}" ./grantsd
+CGO_ENABLED=$CGO_ENABLED GOOS=$GOOS GOARCH=$GOARCH go build -o ./grantsd/grantsd -ldflags "${LDFLAGS}" ./grantsd

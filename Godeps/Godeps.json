@@ -7,6 +7,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "bitbucket.org/ww/goautoneg",
+			"Comment": "null-5",
+			"Rev": "'75cd24fc2f2c2a2088577d12123ddee5f54e0675'"
+		},
+		{
 			"ImportPath": "code.impractical.co/pqarrays",
 			"Rev": "e02237bd0f22fbf34ddfc1ecdedde1c62124a483"
 		},
@@ -14,6 +19,10 @@
 			"ImportPath": "darlinggo.co/pan",
 			"Comment": "v0.1.0-1-gfff7af8",
 			"Rev": "fff7af8f1e4c8d005ac22f7ec23e4937cc698a26"
+		},
+		{
+			"ImportPath": "darlinggo.co/version",
+			"Rev": "18538a81ef9aaa907d1af48c005928111aba110d"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
