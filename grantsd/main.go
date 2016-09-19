@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rubenv/sql-migrate"
 
+	"darlinggo.co/healthcheck"
 	"darlinggo.co/version"
 )
 
@@ -50,6 +52,11 @@ func main() {
 
 	// set up version handler
 	http.Handle("/version", version.Handler)
+
+	// set up health check
+	dbCheck := healthcheck.NewSQL(db, "main Postgres DB")
+	checker := healthcheck.NewChecks(context.Background(), log.Printf, dbCheck)
+	http.Handle("/health", checker)
 
 	vers := version.Tag
 	if vers == "undefined" || vers == "" {

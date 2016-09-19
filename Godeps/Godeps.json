@@ -16,6 +16,11 @@
 			"Rev": "e02237bd0f22fbf34ddfc1ecdedde1c62124a483"
 		},
 		{
+			"ImportPath": "darlinggo.co/healthcheck",
+			"Comment": "v0.1.0-2-g4762d7f",
+			"Rev": "4762d7fd6fbcf361198833ee8696bb867587bbe2"
+		},
+		{
 			"ImportPath": "darlinggo.co/pan",
 			"Comment": "v0.1.0-1-gfff7af8",
 			"Rev": "fff7af8f1e4c8d005ac22f7ec23e4937cc698a26"
