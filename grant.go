@@ -5,6 +5,7 @@ package grants
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"code.impractical.co/pqarrays"
@@ -28,6 +29,11 @@ type Grant struct {
 	ClientID   string
 	IP         string
 	Used       bool
+}
+
+type Dependencies struct {
+	Storer Storer
+	Log    *log.Logger
 }
 
 type Storer interface {
