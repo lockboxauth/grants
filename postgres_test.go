@@ -45,7 +45,7 @@ func (p *PostgresFactory) NewStorer(ctx context.Context) (Storer, error) {
 
 	_, err = p.db.Exec("CREATE DATABASE " + table + ";")
 	if err != nil {
-		log.Printf("Error creating database %s: %+v\n", database, err)
+		log.Printf("Error creating database %s: %+v\n", table, err)
 		return nil, err
 	}
 
