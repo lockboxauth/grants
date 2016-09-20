@@ -16,6 +16,18 @@
 			"Rev": "e02237bd0f22fbf34ddfc1ecdedde1c62124a483"
 		},
 		{
+			"ImportPath": "code.impractical.co/tokens/client",
+			"Rev": "e677e9374ce37772ae2131310cb0bfee308c9355"
+		},
+		{
+			"ImportPath": "darlinggo.co/api",
+			"Rev": "a928dd89d612f2c055f060cb63d22bb9071538ef"
+		},
+		{
+			"ImportPath": "darlinggo.co/hash",
+			"Rev": "3ecb1d8049fdb265593e2dcd2f76636c306906be"
+		},
+		{
 			"ImportPath": "darlinggo.co/healthcheck",
 			"Comment": "v0.1.0-2-g4762d7f",
 			"Rev": "4762d7fd6fbcf361198833ee8696bb867587bbe2"
@@ -24,6 +36,10 @@
 			"ImportPath": "darlinggo.co/pan",
 			"Comment": "v0.1.0-1-gfff7af8",
 			"Rev": "fff7af8f1e4c8d005ac22f7ec23e4937cc698a26"
+		},
+		{
+			"ImportPath": "darlinggo.co/trout",
+			"Rev": "9242b33b192f509746c4777deb72d09c3cfbe8dd"
 		},
 		{
 			"ImportPath": "darlinggo.co/version",
@@ -51,6 +67,10 @@
 		{
 			"ImportPath": "github.com/rubenv/sql-migrate/sqlparse",
 			"Rev": "6f4757563362064790a6687a6b60f182062c8634"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "351dc6a5bf92a5f2ae22fadeee08eb6a45aa2d93"
 		},
 		{
 			"ImportPath": "gopkg.in/gorp.v1",
