@@ -48,7 +48,7 @@ type RequestError struct {
 type UnhandledRequestError RequestError
 
 func (u UnhandledRequestError) Error() string {
-	return fmt.Sprintf("unhandled RequestError %+v", u)
+	return fmt.Sprintf("unhandled RequestError %+v", u.RequestError())
 }
 
 func (u UnhandledRequestError) RequestError() RequestError {
