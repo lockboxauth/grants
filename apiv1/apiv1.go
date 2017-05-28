@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ericchiang/oidc"
+
 	"code.impractical.co/grants"
 	refresh "code.impractical.co/tokens/client"
 )
@@ -19,6 +21,9 @@ var (
 type APIv1 struct {
 	grants.Dependencies
 	Tokens refresh.Manager
+
+	GoogleIDVerifier *oidc.IDTokenVerifier
+	GoogleClients    []string
 }
 
 type APIError struct {
@@ -56,6 +61,7 @@ func returnToken(redirect bool, w http.ResponseWriter, r *http.Request, token To
 		// TODO(paddy): actually redirect the user
 		return
 	}
+	// TODO(paddy): return the token as JSON
 }
 
 func getClientCredentials(r *http.Request) (id, secret, redirect string) {
@@ -116,15 +122,16 @@ func (a APIv1) getGranter(values url.Values, clientID string) granter {
 			manager:  a.Tokens,
 			log:      a.Log,
 		}
-		/*case "password":
-		return credentialsGranter{
-			username: values.Get("username"),
-			password: values.Get("password"),
-			client:   clientID,
-		}*/
+	case "google_id":
+		return &googleIDGranter{
+			tokenVal:     values.Get("id_token"),
+			client:       clientID,
+			oidcVerifier: a.GoogleIDVerifier,
+			gClients:     a.GoogleClients,
+			log:          a.Log,
+		}
 	}
-	var g granter
-	return g
+	return nil
 }
 
 func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) {
