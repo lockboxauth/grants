@@ -1,6 +1,10 @@
-package grants
+package storers
 
-import "context"
+import (
+	"context"
+
+	"code.impractical.co/grants"
+)
 
 func init() {
 	storerFactories = append(storerFactories, MemstoreFactory{})
@@ -8,7 +12,7 @@ func init() {
 
 type MemstoreFactory struct{}
 
-func (m MemstoreFactory) NewStorer(ctx context.Context) (Storer, error) {
+func (m MemstoreFactory) NewStorer(ctx context.Context) (grants.Storer, error) {
 	return NewMemstore(), nil
 }
 

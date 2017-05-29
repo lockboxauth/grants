@@ -1,4 +1,4 @@
-package grants
+package storers
 
 import (
 	"context"
@@ -10,18 +10,19 @@ import (
 	"testing"
 	"time"
 
+	"code.impractical.co/grants"
 	"code.impractical.co/pqarrays"
 	"github.com/pborman/uuid"
 )
 
 type StorerFactory interface {
-	NewStorer(ctx context.Context) (Storer, error)
+	NewStorer(ctx context.Context) (grants.Storer, error)
 	TeardownStorers() error
 }
 
 var storerFactories []StorerFactory
 
-func compareGrants(grant1, grant2 Grant) (success bool, field string, val1, val2 interface{}) {
+func compareGrants(grant1, grant2 grants.Grant) (success bool, field string, val1, val2 interface{}) {
 	if !uuid.Equal(grant1.ID, grant2.ID) {
 		return false, "ID", grant1.ID, grant2.ID
 	}
@@ -81,7 +82,7 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			grant := Grant{
+			grant := grants.Grant{
 				ID:         uuid.NewRandom(),
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeGrant",
@@ -123,7 +124,7 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			grant := Grant{
+			grant := grants.Grant{
 				ID:         uuid.NewRandom(),
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeUsedGrant",
@@ -144,8 +145,8 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			}
 
 			_, err = storer.ExchangeGrant(ctx, grant.ID)
-			if err != ErrGrantAlreadyUsed {
-				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyUsed, storer, err)
+			if err != grants.ErrGrantAlreadyUsed {
+				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyUsed, storer, err)
 			}
 		})
 	}
@@ -164,8 +165,8 @@ func TestExchangeNonExistentGrant(t *testing.T) {
 			ctx, storer := ctx, storer
 
 			_, err = storer.ExchangeGrant(ctx, uuid.NewRandom())
-			if err != ErrGrantNotFound {
-				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantNotFound, storer, err)
+			if err != grants.ErrGrantNotFound {
+				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 			}
 		})
 	}
@@ -183,7 +184,7 @@ func TestCreateDuplicateGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			grant := Grant{
+			grant := grants.Grant{
 				ID:         uuid.NewRandom(),
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateGrant",
@@ -201,8 +202,8 @@ func TestCreateDuplicateGrant(t *testing.T) {
 			grant.SourceID += "!"
 
 			err = storer.CreateGrant(ctx, grant)
-			if err != ErrGrantAlreadyExists {
-				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantAlreadyExists, storer, err)
+			if err != grants.ErrGrantAlreadyExists {
+				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyExists, storer, err)
 			}
 		})
 	}
@@ -220,7 +221,7 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			grant := Grant{
+			grant := grants.Grant{
 				ID:         uuid.NewRandom(),
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateSourceGrant",
@@ -238,8 +239,8 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 			grant.ID = uuid.NewRandom()
 
 			err = storer.CreateGrant(ctx, grant)
-			if err != ErrGrantSourceAlreadyUsed {
-				t.Errorf("Expected error to be %v, %T returned %v\n", ErrGrantSourceAlreadyUsed, storer, err)
+			if err != grants.ErrGrantSourceAlreadyUsed {
+				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantSourceAlreadyUsed, storer, err)
 			}
 		})
 	}

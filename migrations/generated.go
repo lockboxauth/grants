@@ -3,7 +3,7 @@
 // sql/20160723_init.sql
 // DO NOT EDIT!
 
-package grants
+package migrations
 
 import (
 	"bytes"

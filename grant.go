@@ -1,6 +1,6 @@
 package grants
 
-//go:generate go-bindata -pkg $GOPACKAGE -o migrations.go sql/
+//go:generate go-bindata -pkg migrations -o migrations/generated.go sql/
 
 import (
 	"context"
@@ -31,14 +31,18 @@ type Grant struct {
 	Used       bool
 }
 
-type Dependencies struct {
-	Storer Storer
-	Log    *log.Logger
+func (g Grant) GetSQLTableName() string {
+	return "grants"
 }
 
 type Storer interface {
 	CreateGrant(ctx context.Context, g Grant) error
 	ExchangeGrant(ctx context.Context, id uuid.UUID) (Grant, error)
+}
+
+type Dependencies struct {
+	Storer Storer
+	Log    *log.Logger
 }
 
 func FillGrantDefaults(grant Grant) (Grant, error) {
