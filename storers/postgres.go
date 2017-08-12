@@ -8,8 +8,6 @@ import (
 
 	"github.com/lib/pq"
 
-	"github.com/pborman/uuid"
-
 	"darlinggo.co/pan"
 )
 
@@ -42,7 +40,7 @@ func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
 	return err
 }
 
-func exchangeGrantUpdateSQL(id uuid.UUID) *pan.Query {
+func exchangeGrantUpdateSQL(id string) *pan.Query {
 	var grant grants.Grant
 	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
 	query.Comparison(grant, "Used", "=", true)
@@ -52,7 +50,7 @@ func exchangeGrantUpdateSQL(id uuid.UUID) *pan.Query {
 	return query.Flush(" AND ")
 }
 
-func exchangeGrantGetSQL(id uuid.UUID) *pan.Query {
+func exchangeGrantGetSQL(id string) *pan.Query {
 	var grant grants.Grant
 	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
 	query.Where()
@@ -60,7 +58,7 @@ func exchangeGrantGetSQL(id uuid.UUID) *pan.Query {
 	return query.Flush(" ")
 }
 
-func (p Postgres) ExchangeGrant(ctx context.Context, id uuid.UUID) (grants.Grant, error) {
+func (p Postgres) ExchangeGrant(ctx context.Context, id string) (grants.Grant, error) {
 	query := exchangeGrantUpdateSQL(id)
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
@@ -93,7 +91,7 @@ func (p Postgres) ExchangeGrant(ctx context.Context, id uuid.UUID) (grants.Grant
 	if err = rows.Err(); err != nil {
 		return grant, err
 	}
-	if grant.ID == nil {
+	if grant.ID == "" {
 		return grant, grants.ErrGrantNotFound
 	}
 	if count < 1 {

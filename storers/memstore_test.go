@@ -13,7 +13,7 @@ func init() {
 type MemstoreFactory struct{}
 
 func (m MemstoreFactory) NewStorer(ctx context.Context) (grants.Storer, error) {
-	return NewMemstore(), nil
+	return NewMemstore()
 }
 
 func (m MemstoreFactory) TeardownStorers() error {

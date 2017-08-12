@@ -18,7 +18,7 @@ func (a APIv1) issueTokens(ctx context.Context, grant grants.Grant) (Token, APIE
 func (a APIv1) issueRefresh(ctx context.Context, grant grants.Grant) (string, error) {
 	t := refresh.Token{
 		CreatedAt:   time.Now(),
-		CreatedFrom: grant.ID.String(),
+		CreatedFrom: grant.ID,
 		Scopes:      grant.Scopes,
 		ProfileID:   grant.ProfileID,
 		ClientID:    grant.ClientID,

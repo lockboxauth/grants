@@ -20,7 +20,7 @@ var (
 )
 
 type Grant struct {
-	ID         uuid.UUID
+	ID         string
 	SourceType string
 	SourceID   string
 	CreatedAt  time.Time
@@ -37,7 +37,7 @@ func (g Grant) GetSQLTableName() string {
 
 type Storer interface {
 	CreateGrant(ctx context.Context, g Grant) error
-	ExchangeGrant(ctx context.Context, id uuid.UUID) (Grant, error)
+	ExchangeGrant(ctx context.Context, id string) (Grant, error)
 }
 
 type Dependencies struct {
@@ -47,8 +47,8 @@ type Dependencies struct {
 
 func FillGrantDefaults(grant Grant) (Grant, error) {
 	res := grant
-	if grant.ID == nil {
-		res.ID = uuid.NewRandom()
+	if grant.ID == "" {
+		res.ID = uuid.NewRandom().String()
 	}
 	if grant.CreatedAt.IsZero() {
 		res.CreatedAt = time.Now()

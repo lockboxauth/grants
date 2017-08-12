@@ -23,7 +23,7 @@ type StorerFactory interface {
 var storerFactories []StorerFactory
 
 func compareGrants(grant1, grant2 grants.Grant) (success bool, field string, val1, val2 interface{}) {
-	if !uuid.Equal(grant1.ID, grant2.ID) {
+	if grant1.ID != grant2.ID {
 		return false, "ID", grant1.ID, grant2.ID
 	}
 	if grant1.SourceType != grant2.SourceType {
@@ -83,7 +83,7 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 			ctx, storer := ctx, storer
 
 			grant := grants.Grant{
-				ID:         uuid.NewRandom(),
+				ID:         uuid.NewRandom().String(),
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -125,7 +125,7 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			ctx, storer := ctx, storer
 
 			grant := grants.Grant{
-				ID:         uuid.NewRandom(),
+				ID:         uuid.NewRandom().String(),
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeUsedGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -164,7 +164,7 @@ func TestExchangeNonExistentGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			_, err = storer.ExchangeGrant(ctx, uuid.NewRandom())
+			_, err = storer.ExchangeGrant(ctx, uuid.NewRandom().String())
 			if err != grants.ErrGrantNotFound {
 				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 			}
@@ -185,7 +185,7 @@ func TestCreateDuplicateGrant(t *testing.T) {
 			ctx, storer := ctx, storer
 
 			grant := grants.Grant{
-				ID:         uuid.NewRandom(),
+				ID:         uuid.NewRandom().String(),
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -222,7 +222,7 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 			ctx, storer := ctx, storer
 
 			grant := grants.Grant{
-				ID:         uuid.NewRandom(),
+				ID:         uuid.NewRandom().String(),
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateSourceGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -236,7 +236,7 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
 			}
 
-			grant.ID = uuid.NewRandom()
+			grant.ID = uuid.NewRandom().String()
 
 			err = storer.CreateGrant(ctx, grant)
 			if err != grants.ErrGrantSourceAlreadyUsed {
