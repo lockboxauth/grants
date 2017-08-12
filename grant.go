@@ -5,10 +5,10 @@ package grants
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"code.impractical.co/pqarrays"
+	"github.com/apex/log"
 	"github.com/pborman/uuid"
 )
 

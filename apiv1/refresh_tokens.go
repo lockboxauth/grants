@@ -2,8 +2,9 @@ package apiv1
 
 import (
 	"context"
-	"log"
 	"time"
+
+	"github.com/apex/log"
 
 	"code.impractical.co/grants"
 	refresh "code.impractical.co/tokens/client"
@@ -47,14 +48,14 @@ func (r *refreshTokenGranter) Validate(ctx context.Context) APIError {
 		if err == refresh.ErrInvalidTokenString {
 			return invalidGrantError
 		}
-		r.log.Printf("Error validating refresh token: %+v\n", err)
+		r.log.WithError(err).Debug("Error validating refresh token")
 	}
 	if len(errs) > 0 {
 		return serverError
 	}
 	r.token, errs = r.manager.Get(ctx, tokenID)
 	if len(errs) > 0 {
-		r.log.Printf("Error retrieving refresh token: %+v\n", errs)
+		r.log.WithError(err).Error("Error retrieving refresh token")
 		return serverError
 	}
 	if r.token.ClientID != r.client {

@@ -2,9 +2,9 @@ package apiv1
 
 import (
 	"context"
-	"log"
 	"strconv"
 
+	"github.com/apex/log"
 	"github.com/ericchiang/oidc"
 
 	"code.impractical.co/googleid"
@@ -27,12 +27,12 @@ type googleIDGranter struct {
 func (g *googleIDGranter) Validate(ctx context.Context) APIError {
 	token, err := googleid.Decode(g.tokenVal)
 	if err != nil {
-		g.log.Printf("Error decoding ID token: %+v\n", err)
+		g.log.WithError(err).Debug("Error decoding ID token")
 		return invalidGrantError
 	}
 	err = googleid.Verify(ctx, g.tokenVal, g.gClients, g.oidcVerifier)
 	if err != nil {
-		g.log.Printf("Error verifying Google ID token: %+v\n", err)
+		g.log.WithError(err).Debug("Error verifying ID token")
 		return invalidGrantError
 	}
 	g.token = token
