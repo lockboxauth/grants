@@ -9,8 +9,8 @@ import (
 
 	"github.com/ericchiang/oidc"
 
-	"code.impractical.co/grants"
-	refresh "code.impractical.co/tokens/client"
+	"impractical.co/auth/grants"
+	refresh "impractical.co/auth/tokens/client"
 )
 
 var (

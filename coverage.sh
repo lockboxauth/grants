@@ -2,7 +2,7 @@
 
 mkdir -p .cover-profiles
 rm .cover-profiles/*
-for pkg in $(go list ./... | grep -v '/vendor/'); do \
+for pkg in $(go list ./...); do \
 	echo "################### testing ${pkg} ###################"; \
 	go test $pkg -race -v -covermode=atomic -coverprofile=.cover-profiles/${pkg//\//.}.out; \
 done

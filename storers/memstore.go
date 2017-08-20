@@ -3,7 +3,7 @@ package storers
 import (
 	"context"
 
-	"code.impractical.co/grants"
+	"impractical.co/auth/grants"
 
 	memdb "github.com/hashicorp/go-memdb"
 )

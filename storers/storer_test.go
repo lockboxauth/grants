@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"code.impractical.co/grants"
-	"code.impractical.co/pqarrays"
 	"github.com/pborman/uuid"
+	"impractical.co/auth/grants"
+	"impractical.co/pqarrays"
 )
 
 type StorerFactory interface {

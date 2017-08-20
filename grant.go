@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"code.impractical.co/pqarrays"
 	"github.com/apex/log"
 	"github.com/pborman/uuid"
+	"impractical.co/pqarrays"
 )
 
 var (

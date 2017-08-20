@@ -6,8 +6,8 @@ import (
 
 	"github.com/apex/log"
 
-	"code.impractical.co/grants"
-	refresh "code.impractical.co/tokens/client"
+	"impractical.co/auth/grants"
+	refresh "impractical.co/auth/tokens/client"
 )
 
 func (a APIv1) issueTokens(ctx context.Context, grant grants.Grant) (Token, APIError) {

@@ -7,8 +7,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ericchiang/oidc"
 
-	"code.impractical.co/googleid"
-	"code.impractical.co/grants"
+	"impractical.co/auth/grants"
+	"impractical.co/googleid"
 )
 
 type googleIDGranter struct {

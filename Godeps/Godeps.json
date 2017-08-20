@@ -1,6 +1,6 @@
 {
-	"ImportPath": "code.impractical.co/grants",
-	"GoVersion": "go1.7",
+	"ImportPath": "impractical.co/auth/grants",
+	"GoVersion": "go1.9rc2",
 	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
@@ -12,15 +12,15 @@
 			"Rev": "'75cd24fc2f2c2a2088577d12123ddee5f54e0675'"
 		},
 		{
-			"ImportPath": "code.impractical.co/googleid",
+			"ImportPath": "impractical.co/googleid",
 			"Rev": "721ea739ea05ae5918c15fb9edc50bbc294d416d"
 		},
 		{
-			"ImportPath": "code.impractical.co/pqarrays",
+			"ImportPath": "impractical.co/pqarrays",
 			"Rev": "e02237bd0f22fbf34ddfc1ecdedde1c62124a483"
 		},
 		{
-			"ImportPath": "code.impractical.co/tokens/client",
+			"ImportPath": "impractical.co/auth/tokens/client",
 			"Rev": "ed1d98f576663dca3820f3ec7ced6fc3d5d8f26c"
 		},
 		{

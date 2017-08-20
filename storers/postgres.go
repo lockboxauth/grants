@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"code.impractical.co/grants"
+	"impractical.co/auth/grants"
 
 	"github.com/lib/pq"
 
