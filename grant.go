@@ -9,6 +9,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/pborman/uuid"
+	"impractical.co/auth/sessions"
+	"impractical.co/auth/tokens"
 	"impractical.co/pqarrays"
 )
 
@@ -41,8 +43,10 @@ type Storer interface {
 }
 
 type Dependencies struct {
-	Storer Storer
-	Log    *log.Logger
+	Storer   Storer
+	refresh  tokens.Dependencies
+	sessions sessions.Dependencies
+	Log      *log.Logger
 }
 
 func FillGrantDefaults(grant Grant) (Grant, error) {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
-	"github.com/ericchiang/oidc"
+	"github.com/coreos/go-oidc"
 
 	"impractical.co/auth/grants"
 	"impractical.co/googleid"
@@ -14,7 +14,7 @@ import (
 type googleIDGranter struct {
 	tokenVal     string                // the token
 	client       string                // the client that created the token
-	gClients     []string              // the clients that the token must be for
+	gClients     []string              // the Google clients that the token must be for
 	oidcVerifier *oidc.IDTokenVerifier // the verifier that we can use to verify tokens
 
 	// set by Validate and here so Grant can use them

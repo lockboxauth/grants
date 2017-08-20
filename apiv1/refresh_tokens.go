@@ -2,65 +2,52 @@ package apiv1
 
 import (
 	"context"
-	"time"
-
-	"github.com/apex/log"
+	"strings"
 
 	"impractical.co/auth/grants"
-	refresh "impractical.co/auth/tokens/client"
+	"impractical.co/auth/tokens"
 )
 
 func (a APIv1) issueTokens(ctx context.Context, grant grants.Grant) (Token, APIError) {
-	// TODO(paddy): exchange grant for refresh token and access token
-	return Token{}, APIError{}
-}
+	// generate access first, so if there's a problem
+	// the refresh error isn't just floating around, unused
+	access, err := a.IssueAccessToken(ctx, grant)
+	if err != nil {
+		a.Log.WithError(err).Error("Error generating access token")
+		return Token{}, serverError
+	}
 
-func (a APIv1) issueRefresh(ctx context.Context, grant grants.Grant) (string, error) {
-	t := refresh.Token{
-		CreatedAt:   time.Now(),
-		CreatedFrom: grant.ID,
-		Scopes:      grant.Scopes,
-		ProfileID:   grant.ProfileID,
-		ClientID:    grant.ClientID,
+	refresh, err := a.IssueRefreshToken(ctx, grant)
+	if err != nil {
+		a.Log.WithError(err).Error("Error issuing refresh token")
+		return Token{}, serverError
 	}
-	t, errs := a.Tokens.Insert(ctx, t)
-	if len(errs) > 0 {
-		return "", errs[0] // TODO(paddy): stop dropping errors
-	}
-	return refresh.Build(t), nil
+	return Token{
+		AccessToken:  access,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // TODO(paddy): don't hardcode expiry
+		RefreshToken: refresh,
+		Scope:        strings.Join([]string(grant.Scopes), ","),
+	}, APIError{}
 }
 
 type refreshTokenGranter struct {
 	tokenVal string
-	token    refresh.Token
+	token    tokens.RefreshToken
 	client   string
-	manager  refresh.Manager
-	log      *log.Logger
+	deps     grants.Dependencies
 }
 
 func (r *refreshTokenGranter) Validate(ctx context.Context) APIError {
-	tokenID, _, err := refresh.Break(r.tokenVal)
+	token, err := r.deps.ValidateRefreshToken(ctx, r.tokenVal, r.client)
 	if err != nil {
-		return invalidGrantError
-	}
-	errs := r.manager.Validate(ctx, r.tokenVal)
-	for _, err := range errs {
-		if err == refresh.ErrInvalidTokenString {
+		if err == tokens.ErrInvalidToken {
 			return invalidGrantError
 		}
-		r.log.WithError(err).Debug("Error validating refresh token")
-	}
-	if len(errs) > 0 {
+		r.deps.Log.WithError(err).Error("Error validating refresh token")
 		return serverError
 	}
-	r.token, errs = r.manager.Get(ctx, tokenID)
-	if len(errs) > 0 {
-		r.log.WithError(err).Error("Error retrieving refresh token")
-		return serverError
-	}
-	if r.token.ClientID != r.client {
-		return invalidGrantError
-	}
+	r.token = token
 	return APIError{}
 }
 
@@ -75,11 +62,7 @@ func (r *refreshTokenGranter) Grant(ctx context.Context, scopes []string) grants
 }
 
 func (r *refreshTokenGranter) Granted(ctx context.Context) error {
-	errs := r.manager.Use(ctx, r.token.ID)
-	if len(errs) > 0 {
-		return errs[0] // TODO(paddy): stop dropping errors
-	}
-	return nil
+	return r.deps.UseRefreshToken(ctx, r.token.ID)
 }
 
 func (r *refreshTokenGranter) Redirects() bool {

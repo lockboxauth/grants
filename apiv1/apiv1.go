@@ -7,10 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ericchiang/oidc"
+	"github.com/coreos/go-oidc"
 
 	"impractical.co/auth/grants"
-	refresh "impractical.co/auth/tokens/client"
 )
 
 var (
@@ -20,7 +19,6 @@ var (
 
 type APIv1 struct {
 	grants.Dependencies
-	Tokens refresh.Manager
 
 	GoogleIDVerifier *oidc.IDTokenVerifier
 	GoogleClients    []string
@@ -119,8 +117,7 @@ func (a APIv1) getGranter(values url.Values, clientID string) granter {
 		return &refreshTokenGranter{
 			tokenVal: values.Get("refresh_token"),
 			client:   clientID,
-			manager:  a.Tokens,
-			log:      a.Log,
+			deps:     a.Dependencies,
 		}
 	case "google_id":
 		return &googleIDGranter{
