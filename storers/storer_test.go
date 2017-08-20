@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pborman/uuid"
 	"impractical.co/auth/grants"
 	"impractical.co/pqarrays"
+
+	"github.com/hashicorp/go-uuid"
 )
 
 type StorerFactory interface {
@@ -82,8 +83,12 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
+			id, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Unexpected error generating UUID: %+v\n", err)
+			}
 			grant := grants.Grant{
-				ID:         uuid.NewRandom().String(),
+				ID:         id,
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -124,8 +129,12 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
+			id, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Unexpected error generating UUID: %+v\n", err)
+			}
 			grant := grants.Grant{
-				ID:         uuid.NewRandom().String(),
+				ID:         id,
 				SourceType: "manual",
 				SourceID:   "TestCreateAndExchangeUsedGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -164,7 +173,12 @@ func TestExchangeNonExistentGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
-			_, err = storer.ExchangeGrant(ctx, uuid.NewRandom().String())
+			id, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Error generating UUID: %+v\n", err)
+			}
+
+			_, err = storer.ExchangeGrant(ctx, id)
 			if err != grants.ErrGrantNotFound {
 				t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 			}
@@ -184,8 +198,12 @@ func TestCreateDuplicateGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
+			id, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Unexpected error generating UUID: %+v\n", err)
+			}
 			grant := grants.Grant{
-				ID:         uuid.NewRandom().String(),
+				ID:         id,
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -221,8 +239,12 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 			t.Parallel()
 			ctx, storer := ctx, storer
 
+			id, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Unexpected error generating UUID: %+v\n", err)
+			}
 			grant := grants.Grant{
-				ID:         uuid.NewRandom().String(),
+				ID:         id,
 				SourceType: "manual",
 				SourceID:   "TestCreateDuplicateSourceGrant",
 				CreatedAt:  time.Now().Round(time.Millisecond),
@@ -236,7 +258,11 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 				t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
 			}
 
-			grant.ID = uuid.NewRandom().String()
+			newID, err := uuid.GenerateUUID()
+			if err != nil {
+				t.Fatalf("Unexpected error generating UUID: %+v\n", err)
+			}
+			grant.ID = newID
 
 			err = storer.CreateGrant(ctx, grant)
 			if err != grants.ErrGrantSourceAlreadyUsed {

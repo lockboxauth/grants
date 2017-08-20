@@ -7,11 +7,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/apex/log"
-	"github.com/pborman/uuid"
 	"impractical.co/auth/sessions"
 	"impractical.co/auth/tokens"
 	"impractical.co/pqarrays"
+
+	"github.com/apex/log"
+	"github.com/hashicorp/go-uuid"
 )
 
 var (
@@ -52,7 +53,11 @@ type Dependencies struct {
 func FillGrantDefaults(grant Grant) (Grant, error) {
 	res := grant
 	if grant.ID == "" {
-		res.ID = uuid.NewRandom().String()
+		id, err := uuid.GenerateUUID()
+		if err != nil {
+			return Grant{}, err
+		}
+		res.ID = id
 	}
 	if grant.CreatedAt.IsZero() {
 		res.CreatedAt = time.Now()

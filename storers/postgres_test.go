@@ -13,7 +13,7 @@ import (
 	"impractical.co/auth/grants"
 	"impractical.co/auth/grants/migrations"
 
-	"github.com/pborman/uuid"
+	"github.com/hashicorp/go-uuid"
 	"github.com/rubenv/sql-migrate"
 )
 
@@ -44,7 +44,12 @@ func (p *PostgresFactory) NewStorer(ctx context.Context) (grants.Storer, error) 
 		return nil, errors.New("PG_TEST_DB must begin with postgres://")
 	}
 
-	table := "grants_test_" + hex.EncodeToString([]byte(uuid.NewRandom()))
+	tableSuffix, err := uuid.GenerateRandomBytes(6)
+	if err != nil {
+		log.Printf("Error generating UUID: %+v\n", err)
+		return nil, err
+	}
+	table := "grants_test_" + hex.EncodeToString(tableSuffix)
 
 	_, err = p.db.Exec("CREATE DATABASE " + table + ";")
 	if err != nil {
