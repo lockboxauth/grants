@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/go-oidc"
 
+	"impractical.co/auth/accounts"
 	"impractical.co/auth/grants"
 )
 
@@ -22,6 +23,7 @@ type APIv1 struct {
 
 	GoogleIDVerifier *oidc.IDTokenVerifier
 	GoogleClients    []string
+	Accounts         accounts.Storer
 }
 
 type APIError struct {
@@ -123,8 +125,9 @@ func (a APIv1) getGranter(values url.Values, clientID string) granter {
 		return &googleIDGranter{
 			tokenVal:     values.Get("id_token"),
 			client:       clientID,
-			oidcVerifier: a.GoogleIDVerifier,
 			gClients:     a.GoogleClients,
+			oidcVerifier: a.GoogleIDVerifier,
+			accounts:     a.Accounts,
 			log:          a.Log,
 		}
 	}

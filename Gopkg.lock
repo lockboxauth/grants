@@ -123,6 +123,12 @@
 
 [[projects]]
   branch = "master"
+  name = "impractical.co/auth/accounts"
+  packages = ["."]
+  revision = "ba459659203cab67329138cecb9c8f16f8405c4a"
+
+[[projects]]
+  branch = "master"
   name = "impractical.co/auth/sessions"
   packages = ["."]
   revision = "1d172e040d1e7f48cee380e904e1be265fdce276"
@@ -148,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "811c68612b3db03c702b84de9db1227c2326e4ff2832f357210ea13da13d6e3a"
+  inputs-digest = "555935775b2bcdac5b903d22175d9fabe4e251316959c2d57ac51384dd5a91ce"
   solver-name = "gps-cdcl"
   solver-version = 1

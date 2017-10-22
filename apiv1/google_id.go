@@ -3,10 +3,12 @@ package apiv1
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/coreos/go-oidc"
 
+	"impractical.co/auth/accounts"
 	"impractical.co/auth/grants"
 	"impractical.co/googleid"
 )
@@ -16,6 +18,7 @@ type googleIDGranter struct {
 	client       string                // the client that created the token
 	gClients     []string              // the Google clients that the token must be for
 	oidcVerifier *oidc.IDTokenVerifier // the verifier that we can use to verify tokens
+	accounts     accounts.Storer       // the Storer that grants access to accounts data
 
 	// set by Validate and here so Grant can use them
 	userID string
@@ -36,8 +39,16 @@ func (g *googleIDGranter) Validate(ctx context.Context) APIError {
 		return invalidGrantError
 	}
 	g.token = token
-	// TODO(paddy): retrieve account based on google ID's email
-	// TODO(paddy): set g.userID to the profile ID associated with that account
+	account, err := g.accounts.Get(ctx, strings.ToLower(token.Email))
+	if err != nil {
+		g.log.WithError(err).WithField("email", token.Email).Error("Error retriving account")
+		return serverError
+	}
+	if account.ProfileID == "" {
+		g.log.WithError(err).WithField("email", token.Email).Debug("Empty ProfileID")
+		return invalidGrantError
+	}
+	g.userID = account.ProfileID
 	return APIError{}
 }
 
