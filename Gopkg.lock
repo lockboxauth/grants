@@ -23,7 +23,7 @@
   branch = "v2"
   name = "github.com/coreos/go-oidc"
   packages = ["."]
-  revision = "731ffe63a67970dfa9b0a45c3ad43d2ae6a38456"
+  revision = "2e15e5498dc4eda1265de6f4ccc49419fd81be16"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -35,7 +35,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
+  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
 
 [[projects]]
   branch = "master"
@@ -65,7 +65,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "b0d5024adb34b4122c6ee7eeb6ab511f7223222d"
+  revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -83,25 +83,25 @@
   branch = "master"
   name = "github.com/rubenv/sql-migrate"
   packages = [".","sqlparse"]
-  revision = "79fe99e24311fa42469fb2ca23eb3f8f065e6155"
+  revision = "e2c068b24b5e367fdce5c208e280839f9ae0940f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ed25519","ed25519/internal/edwards25519"]
-  revision = "edd5e9b0879d13ee6970a50153d85b8fec9f7686"
+  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "cd69bc3fc700721b709c3a59e16e24c67b58f6ff"
+  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","internal"]
-  revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+  revision = "f95fa95eaa936d9d87489b15d1d18b97c1ba9c28"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -137,7 +137,7 @@
   branch = "master"
   name = "impractical.co/auth/tokens"
   packages = ["."]
-  revision = "1f700af8df7b17d1660b95c4dd8a34d217e64b12"
+  revision = "e6926455d2d1622fdc24f65bb0e50e51ddba52c6"
 
 [[projects]]
   branch = "master"

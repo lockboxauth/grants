@@ -42,7 +42,14 @@ func (d Dependencies) ValidateRefreshToken(ctx context.Context, token, client st
 }
 
 func (d Dependencies) UseRefreshToken(ctx context.Context, tokenID string) error {
-	// TODO(paddy): use refresh token
+	err := d.refresh.Storer.UseToken(ctx, tokenID)
+	if err != nil && err != tokens.ErrTokenUsed {
+		d.Log.WithField("token", tokenID).WithError(err).Error("Error using token.")
+		return err
+	}
+	if err == tokens.ErrTokenUsed {
+		return err
+	}
 	return nil
 }
 
