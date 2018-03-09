@@ -12,6 +12,7 @@ import (
 
 	"impractical.co/auth/accounts"
 	"impractical.co/auth/grants"
+	"impractical.co/auth/scopes"
 )
 
 var (
@@ -26,6 +27,7 @@ type APIv1 struct {
 	GoogleIDVerifier *oidc.IDTokenVerifier
 	GoogleClients    []string
 	Accounts         accounts.Storer
+	Scopes           scopes.Storer
 }
 
 type APIError struct {
@@ -165,10 +167,28 @@ func (a APIv1) validateClientCredentials(ctx context.Context, clientID, clientSe
 // find which scopes should be used for a client
 // if none are passed in, a default set for the client is used
 // if one or more are passed in, scopes the client can't use are stripped
-func (a APIv1) checkScopes(ctx context.Context, clientID string, scopes []string) ([]string, APIError) {
-	var results []string
-	// TODO(paddy): if scopes is empty, populate it with a default set
-	// TODO(paddy): if scopes contains any scopes the client can't use, remove them
+func (a APIv1) checkScopes(ctx context.Context, clientID string, ids []string) ([]string, APIError) {
+	var permittedScopes []Scope
+	var err error
+	if len(ids) < 1 {
+		permittedScopes, err = a.Scopes.ListDefault(ctx)
+		if err != nil {
+			// TODO(paddy): return appropriate error
+		}
+	} else {
+		resp, err := a.Scopes.GetMulti(ctx, ids)
+		if err != nil {
+			// TODO(paddy): return appropriate error
+		}
+		for _, v := range resp {
+			permittedScopes = append(permittedScopes, v)
+		}
+	}
+	permittedScopes = scopes.FilterByClientID(ctx, permittedScopes, clientID)
+	results := make([]string, 0, len(permittedScopes))
+	for _, scope := range permittedScopes {
+		results = append(results, scope.ID)
+	}
 	return results, APIError{}
 }
 
