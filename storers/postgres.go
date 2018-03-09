@@ -19,12 +19,12 @@ func NewPostgres(ctx context.Context, conn *sql.DB) (Postgres, error) {
 	return Postgres{db: conn}, nil
 }
 
-func createGrantSQL(grant grants.Grant) *pan.Query {
+func createGrantSQL(grant postgresGrant) *pan.Query {
 	return pan.Insert(grant)
 }
 
 func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
-	query := createGrantSQL(grant)
+	query := createGrantSQL(toPostgres(grant))
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
 }
 
 func exchangeGrantUpdateSQL(id string) *pan.Query {
-	var grant grants.Grant
+	var grant postgresGrant
 	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
 	query.Comparison(grant, "Used", "=", true)
 	query.Where().Flush(" ")
@@ -51,7 +51,7 @@ func exchangeGrantUpdateSQL(id string) *pan.Query {
 }
 
 func exchangeGrantGetSQL(id string) *pan.Query {
-	var grant grants.Grant
+	var grant postgresGrant
 	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
 	query.Where()
 	query.Comparison(grant, "ID", "=", id)
@@ -81,21 +81,21 @@ func (p Postgres) ExchangeGrant(ctx context.Context, id string) (grants.Grant, e
 	if err != nil {
 		return grants.Grant{}, err
 	}
-	var grant grants.Grant
+	var grant postgresGrant
 	for rows.Next() {
 		err = pan.Unmarshal(rows, &grant)
 		if err != nil {
-			return grant, err
+			return fromPostgres(grant), err
 		}
 	}
 	if err = rows.Err(); err != nil {
-		return grant, err
+		return fromPostgres(grant), err
 	}
 	if grant.ID == "" {
-		return grant, grants.ErrGrantNotFound
+		return fromPostgres(grant), grants.ErrGrantNotFound
 	}
 	if count < 1 {
 		return grants.Grant{}, grants.ErrGrantAlreadyUsed
 	}
-	return grant, nil
+	return fromPostgres(grant), nil
 }

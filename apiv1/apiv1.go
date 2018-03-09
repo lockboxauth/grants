@@ -168,7 +168,7 @@ func (a APIv1) validateClientCredentials(ctx context.Context, clientID, clientSe
 // if none are passed in, a default set for the client is used
 // if one or more are passed in, scopes the client can't use are stripped
 func (a APIv1) checkScopes(ctx context.Context, clientID string, ids []string) ([]string, APIError) {
-	var permittedScopes []Scope
+	var permittedScopes []scopes.Scope
 	var err error
 	if len(ids) < 1 {
 		permittedScopes, err = a.Scopes.ListDefault(ctx)

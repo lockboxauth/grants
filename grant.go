@@ -9,7 +9,6 @@ import (
 
 	"impractical.co/auth/sessions"
 	"impractical.co/auth/tokens"
-	"impractical.co/pqarrays"
 
 	"github.com/apex/log"
 	"github.com/hashicorp/go-uuid"
@@ -27,15 +26,11 @@ type Grant struct {
 	SourceType string
 	SourceID   string
 	CreatedAt  time.Time
-	Scopes     pqarrays.StringArray
+	Scopes     []string
 	ProfileID  string
 	ClientID   string
 	IP         string
 	Used       bool
-}
-
-func (g Grant) GetSQLTableName() string {
-	return "grants"
 }
 
 type Storer interface {
