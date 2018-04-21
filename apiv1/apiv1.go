@@ -59,12 +59,16 @@ type granter interface {
 	Redirects() bool
 }
 
+// populate a url.Values with an APIError, so we can use it
+// to generate a query string with the error included.
 func errAsQueryParams(apiErr APIError) url.Values {
 	return url.Values{
 		"error": []string{apiErr.Error},
 	}
 }
 
+// populate a url.Values with the values from a Token, so we
+// can use it to generate a query string with the token included.
 func tokenAsQueryParams(token Token) url.Values {
 	return url.Values{
 		"access_token": []string{token.AccessToken},
@@ -74,6 +78,9 @@ func tokenAsQueryParams(token Token) url.Values {
 	}
 }
 
+// merge multiple url.Values into a single url.Values, overwriting
+// values from lower-indexed url.Values if multiple url.Values have
+// the same key set.
 func mergeQueryParams(paramSets ...url.Values) url.Values {
 	q := url.Values{}
 	for _, params := range paramSets {
@@ -173,12 +180,12 @@ func (a APIv1) checkScopes(ctx context.Context, clientID string, ids []string) (
 	if len(ids) < 1 {
 		permittedScopes, err = a.Scopes.ListDefault(ctx)
 		if err != nil {
-			// TODO(paddy): return appropriate error
+			return nil, serverError
 		}
 	} else {
 		resp, err := a.Scopes.GetMulti(ctx, ids)
 		if err != nil {
-			// TODO(paddy): return appropriate error
+			return nil, serverError
 		}
 		for _, v := range resp {
 			permittedScopes = append(permittedScopes, v)
