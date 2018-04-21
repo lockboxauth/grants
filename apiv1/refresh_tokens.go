@@ -10,7 +10,7 @@ import (
 
 func (a APIv1) issueTokens(ctx context.Context, grant grants.Grant) (Token, APIError) {
 	// generate access first, so if there's a problem
-	// the refresh error isn't just floating around, unused
+	// the refresh token isn't just floating around, unused
 	access, err := a.IssueAccessToken(ctx, grant)
 	if err != nil {
 		a.Log.WithError(err).Error("Error generating access token")
