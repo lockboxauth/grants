@@ -22,6 +22,7 @@ func init() {
 	}
 }
 
+// isLocal returns true if an IP should be considered local.
 func isLocal(addr string) bool {
 	a := net.ParseIP(addr)
 	for _, cidr := range cidrs {
@@ -32,6 +33,8 @@ func isLocal(addr string) bool {
 	return false
 }
 
+// remoteAddr returns the IP portion of the RemoteAddr of the
+// passed request, discarding any port.
 func remoteAddr(r *http.Request) string {
 	addr := strings.TrimSpace(r.RemoteAddr)
 	lastColon := strings.LastIndex(addr, ":")
@@ -41,6 +44,7 @@ func remoteAddr(r *http.Request) string {
 	return addr[:lastColon]
 }
 
+// getIP returns a best guess at the IP a request came from.
 func getIP(r *http.Request) string {
 	realIP := r.Header.Get("X-Real-Ip")
 	forwardedFor := r.Header.Get("X-Forwarded-For")

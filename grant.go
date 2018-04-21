@@ -9,8 +9,8 @@ import (
 
 	"impractical.co/auth/sessions"
 	"impractical.co/auth/tokens"
+	yall "yall.in"
 
-	"github.com/apex/log"
 	"github.com/hashicorp/go-uuid"
 )
 
@@ -42,7 +42,7 @@ type Dependencies struct {
 	Storer   Storer
 	refresh  tokens.Dependencies
 	sessions sessions.Dependencies
-	Log      *log.Logger
+	Log      *yall.Logger
 }
 
 func FillGrantDefaults(grant Grant) (Grant, error) {

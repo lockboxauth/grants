@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc"
+	yall "yall.in"
 
 	"impractical.co/auth/accounts"
 	"impractical.co/auth/grants"
@@ -96,7 +97,7 @@ func (a APIv1) returnError(redirect bool, w http.ResponseWriter, r *http.Request
 	if redirect {
 		u, err := url.Parse(redirBase)
 		if err != nil {
-			a.Log.WithError(err).WithField("url", redirBase).Error("Error parsing redirect URL")
+			yall.FromContext(r.Context()).WithError(err).WithField("url", redirBase).Error("Error parsing redirect URL")
 			a.returnError(false, w, r, invalidRequestError, redirBase)
 			return
 		}
@@ -112,7 +113,7 @@ func (a APIv1) returnError(redirect bool, w http.ResponseWriter, r *http.Request
 	enc := json.NewEncoder(w)
 	err := enc.Encode(apiErr)
 	if err != nil {
-		a.Log.WithError(err).Error("Error writing response")
+		yall.FromContext(r.Context()).WithError(err).Error("Error writing response")
 	}
 }
 
@@ -121,7 +122,7 @@ func (a APIv1) returnToken(redirect bool, w http.ResponseWriter, r *http.Request
 	if redirect {
 		u, err := url.Parse(redirBase)
 		if err != nil {
-			a.Log.WithError(err).WithField("url", redirBase).Error("Error parsing redirect URL")
+			yall.FromContext(r.Context()).WithError(err).WithField("url", redirBase).Error("Error parsing redirect URL")
 			a.returnError(false, w, r, invalidRequestError, redirBase)
 			return
 		}
@@ -137,7 +138,7 @@ func (a APIv1) returnToken(redirect bool, w http.ResponseWriter, r *http.Request
 	enc := json.NewEncoder(w)
 	err := enc.Encode(token)
 	if err != nil {
-		a.Log.WithError(err).Error("Error writing response")
+		yall.FromContext(r.Context()).WithError(err).Error("Error writing response")
 	}
 }
 
@@ -214,12 +215,12 @@ func (a APIv1) getClientRedirectURI(ctx context.Context, clientID, passed string
 func (a APIv1) createGrant(ctx context.Context, grant grants.Grant) APIError {
 	grant, err := grants.FillGrantDefaults(grant)
 	if err != nil {
-		a.Log.WithError(err).Error("Error filling grant defaults")
+		yall.FromContext(ctx).WithError(err).Error("Error filling grant defaults")
 		return serverError
 	}
 	err = a.Storer.CreateGrant(ctx, grant)
 	if err != nil {
-		a.Log.WithError(err).WithField("grant", grant).Error("Error creating grant")
+		yall.FromContext(ctx).WithError(err).WithField("grant", grant).Error("Error creating grant")
 		return serverError
 	}
 	return APIError{}
@@ -241,7 +242,6 @@ func (a APIv1) getGranter(values url.Values, clientID string) granter {
 			gClients:     a.GoogleClients,
 			oidcVerifier: a.GoogleIDVerifier,
 			accounts:     a.Accounts,
-			log:          a.Log,
 		}
 	}
 	return nil
@@ -254,7 +254,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// explicitly parse the form, so we can handle the error
 	err := r.ParseForm()
 	if err != nil {
-		a.Log.WithError(err).Error("Error parsing form")
+		yall.FromContext(r.Context()).WithError(err).Error("Error parsing form")
 		a.returnError(false, w, r, invalidRequestError, "")
 		return
 	}
@@ -265,7 +265,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// make sure the client is who they say they are
 	clientErr := a.validateClientCredentials(r.Context(), clientID, clientSecret, redirectURI)
 	if !clientErr.IsZero() {
-		a.Log.WithField("api_error", clientErr).Debug("Error validating client")
+		yall.FromContext(r.Context()).WithField("api_error", clientErr).Debug("Error validating client")
 		a.returnError(false, w, r, invalidRequestError, "")
 		return
 	}
@@ -274,7 +274,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	g := a.getGranter(r.PostForm, clientID)
 	if g == nil {
 		// if g is nil, that means it's not a match for our supported types
-		a.Log.WithField("grant_type", r.PostForm.Get("grant_type")).Debug("Unsupported grant type")
+		yall.FromContext(r.Context()).WithField("grant_type", r.PostForm.Get("grant_type")).Debug("Unsupported grant type")
 		a.returnError(false, w, r, APIError{
 			Error: "unsupported_response_type",
 			Code:  http.StatusBadRequest,
@@ -285,7 +285,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// figure out which redirect URI to use for our client
 	redirectURI, err = a.getClientRedirectURI(r.Context(), clientID, redirectURI)
 	if err != nil {
-		a.Log.WithField("client_id", clientID).WithField("redirect_url", redirectURI).
+		yall.FromContext(r.Context()).WithField("client_id", clientID).WithField("redirect_url", redirectURI).
 			WithError(err).Error("Error determining redirect URI.")
 		a.returnError(false, w, r, serverError, "")
 		return
@@ -294,7 +294,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// validate the grant
 	apiErr := g.Validate(r.Context())
 	if !apiErr.IsZero() {
-		a.Log.WithField("error", apiErr).Debug("Error validating grant")
+		yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error validating grant")
 		a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
 		return
 	}
@@ -303,7 +303,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	scopes := strings.Split(r.FormValue("scope"), " ")
 	scopes, apiErr = a.checkScopes(r.Context(), clientID, scopes)
 	if !apiErr.IsZero() {
-		a.Log.WithField("error", apiErr).Debug("Error checking scopes")
+		yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error checking scopes")
 		a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
 		return
 	}
@@ -315,7 +315,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// store the grant
 	apiErr = a.createGrant(r.Context(), grant)
 	if !apiErr.IsZero() {
-		a.Log.WithField("error", apiErr).Debug("Error creating grant")
+		yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error creating grant")
 		a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
 		return
 	}
@@ -323,7 +323,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// issue tokens using the grant
 	token, apiErr := a.issueTokens(r.Context(), grant)
 	if !apiErr.IsZero() {
-		a.Log.WithField("error", apiErr).Debug("Error issuing tokens")
+		yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error issuing tokens")
 		a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
 		return
 	}
@@ -331,7 +331,7 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 	// call any functionality that we need to to mark the grant as used
 	err = g.Granted(r.Context())
 	if err != nil {
-		a.Log.WithField("grant", g).WithError(err).Error("Error marking grant as used")
+		yall.FromContext(r.Context()).WithField("grant", g).WithError(err).Error("Error marking grant as used")
 	}
 
 	// return our tokens

@@ -5,6 +5,7 @@ import (
 
 	"impractical.co/auth/sessions"
 	"impractical.co/auth/tokens"
+	yall "yall.in"
 )
 
 func (d Dependencies) IssueRefreshToken(ctx context.Context, grant Grant) (string, error) {
@@ -35,7 +36,7 @@ func (d Dependencies) ValidateRefreshToken(ctx context.Context, token, client st
 		return tokens.RefreshToken{}, err
 	}
 	if tok.ClientID != client {
-		d.Log.WithField("client_id", client).WithField("desired_id", tok.ClientID).Debug("Client tried to use other client's refresh token.")
+		yall.FromContext(ctx).WithField("client_id", client).WithField("desired_id", tok.ClientID).Debug("Client tried to use other client's refresh token.")
 		return tokens.RefreshToken{}, tokens.ErrInvalidToken
 	}
 	return tok, nil
@@ -44,7 +45,7 @@ func (d Dependencies) ValidateRefreshToken(ctx context.Context, token, client st
 func (d Dependencies) UseRefreshToken(ctx context.Context, tokenID string) error {
 	err := d.refresh.Storer.UseToken(ctx, tokenID)
 	if err != nil && err != tokens.ErrTokenUsed {
-		d.Log.WithField("token", tokenID).WithError(err).Error("Error using token.")
+		yall.FromContext(ctx).WithField("token", tokenID).WithError(err).Error("Error using token.")
 		return err
 	}
 	if err == tokens.ErrTokenUsed {
