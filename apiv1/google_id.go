@@ -63,10 +63,12 @@ func (g *googleIDGranter) Grant(ctx context.Context, scopes []string) grants.Gra
 		ProfileID:  g.userID,
 		ClientID:   g.client,
 		Scopes:     scopes,
+		Used:       true,
 	}
 }
 
-// Granted does nothing, as ID Tokens are a reusable indicator of identity.
+// Granted does nothing, we rely on SourceID to keep from issuing
+// duplicate grants for the same token.
 func (g *googleIDGranter) Granted(ctx context.Context) error {
 	return nil
 }
@@ -75,4 +77,8 @@ func (g *googleIDGranter) Granted(ctx context.Context) error {
 // flow, not the URL querystring redirect flow.
 func (g *googleIDGranter) Redirects() bool {
 	return false
+}
+
+func (g *googleIDGranter) CreatesGrantsInline() bool {
+	return true
 }

@@ -66,6 +66,7 @@ func (r *refreshTokenGranter) Grant(ctx context.Context, scopes []string) grants
 		Scopes:     r.token.Scopes,
 		ProfileID:  r.token.ProfileID,
 		ClientID:   r.token.ClientID,
+		Used:       true,
 	}
 }
 
@@ -79,4 +80,8 @@ func (r *refreshTokenGranter) Granted(ctx context.Context) error {
 // the URL querystring redirect flow.
 func (r *refreshTokenGranter) Redirects() bool {
 	return false
+}
+
+func (r *refreshTokenGranter) CreatesGrantsInline() bool {
+	return true
 }

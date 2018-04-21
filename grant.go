@@ -26,16 +26,24 @@ type Grant struct {
 	SourceType string
 	SourceID   string
 	CreatedAt  time.Time
+	UsedAt     time.Time
 	Scopes     []string
 	ProfileID  string
 	ClientID   string
-	IP         string
+	CreateIP   string
+	UseIP      string
 	Used       bool
+}
+
+type GrantUse struct {
+	Grant string
+	IP    string
+	Time  time.Time
 }
 
 type Storer interface {
 	CreateGrant(ctx context.Context, g Grant) error
-	ExchangeGrant(ctx context.Context, id string) (Grant, error)
+	ExchangeGrant(ctx context.Context, g GrantUse) (Grant, error)
 }
 
 type Dependencies struct {

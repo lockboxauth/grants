@@ -40,12 +40,14 @@ func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
 	return err
 }
 
-func exchangeGrantUpdateSQL(id string) *pan.Query {
+func exchangeGrantUpdateSQL(g grants.GrantUse) *pan.Query {
 	var grant postgresGrant
 	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
 	query.Comparison(grant, "Used", "=", true)
-	query.Where().Flush(" ")
-	query.Comparison(grant, "ID", "=", id)
+	query.Comparison(grant, "UseIP", "=", g.IP)
+	query.Comparison(grant, "UsedAt", "=", g.Time)
+	query.Flush(", ").Where()
+	query.Comparison(grant, "ID", "=", g.Grant)
 	query.Comparison(grant, "Used", "=", false)
 	return query.Flush(" AND ")
 }
@@ -58,8 +60,8 @@ func exchangeGrantGetSQL(id string) *pan.Query {
 	return query.Flush(" ")
 }
 
-func (p Postgres) ExchangeGrant(ctx context.Context, id string) (grants.Grant, error) {
-	query := exchangeGrantUpdateSQL(id)
+func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+	query := exchangeGrantUpdateSQL(g)
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err
@@ -72,7 +74,7 @@ func (p Postgres) ExchangeGrant(ctx context.Context, id string) (grants.Grant, e
 	if err != nil {
 		return grants.Grant{}, err
 	}
-	query = exchangeGrantGetSQL(id)
+	query = exchangeGrantGetSQL(g.Grant)
 	queryStr, err = query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err

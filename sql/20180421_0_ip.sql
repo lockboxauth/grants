@@ -1,0 +1,11 @@
+-- +migrate Up
+ALTER TABLE grants ADD COLUMN use_ip VARCHAR(36) NOT NULL DEFAULT '',
+		   ADD COLUMN create_ip VARCHAR(36) NOT NULL DEFAULT '',
+		   ADD COLUMN used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+		   DROP COLUMN IF EXISTS ip;
+
+-- +migrate Down
+ALTER TABLE grants DROP COLUMN IF EXISTS use_ip,
+		   DROP COLUMN IF EXISTS create_ip,
+		   DROP COLUMN IF EXISTS used_at,
+		   ADD COLUMN ip INET NOT NULL;

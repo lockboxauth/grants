@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc"
 	yall "yall.in"
@@ -49,7 +50,7 @@ type granter interface {
 	// if the grant isn't valid, return an error.
 	Validate(ctx context.Context) APIError
 
-	// create a grant with the specified scopes
+	// populate a grant with the specified scopes
 	Grant(ctx context.Context, scopes []string) grants.Grant
 
 	// optionally perform some action when the grant is used
@@ -58,6 +59,11 @@ type granter interface {
 	// whether the grant type is a redirect flow or should return
 	// results as JSON
 	Redirects() bool
+
+	// whether the grant type creates and uses a grant immediately
+	// within the same request, or if a grant will be passed in
+	// as part of the request
+	CreatesGrantsInline() bool
 }
 
 // populate a url.Values with an APIError, so we can use it
@@ -308,15 +314,39 @@ func (a APIv1) handleAccessTokenRequest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// build our grant up
+	// retrieve or fill out our grant fields
 	grant := g.Grant(r.Context(), scopes)
-	grant.IP = getIP(r)
 
-	// store the grant
-	apiErr = a.createGrant(r.Context(), grant)
-	if !apiErr.IsZero() {
-		yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error creating grant")
-		a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
+	// create and store our grant for granters
+	// that don't create their own
+	if g.CreatesGrantsInline() {
+		// build our grant
+		grant.CreateIP = grant.UseIP
+
+		// store the grant
+		apiErr = a.createGrant(r.Context(), grant)
+		if !apiErr.IsZero() {
+			yall.FromContext(r.Context()).WithField("error", apiErr).Debug("Error creating grant")
+			a.returnError(g.Redirects(), w, r, apiErr, redirectURI)
+			return
+		}
+	}
+
+	grant, err = a.Storer.ExchangeGrant(r.Context(), grants.GrantUse{
+		Grant: grant.ID,
+		IP:    getIP(r),
+		Time:  time.Now(),
+	})
+
+	if err == grants.ErrGrantAlreadyUsed {
+		// TODO(paddy): return an appropriate error
+		return
+	} else if err == grants.ErrGrantNotFound {
+		// TODO(paddy): return an appropriate error
+		return
+	} else if err != nil {
+		yall.FromContext(r.Context()).WithError(err).Error("error exchanging grant")
+		a.returnError(g.Redirects(), w, r, serverError, redirectURI)
 		return
 	}
 

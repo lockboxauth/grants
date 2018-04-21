@@ -12,10 +12,12 @@ type postgresGrant struct {
 	SourceType string
 	SourceID   string
 	CreatedAt  time.Time
+	UsedAt     time.Time
 	Scopes     pqarrays.StringArray
 	ProfileID  string
 	ClientID   string
-	IP         string
+	CreateIP   string
+	UseIP      string
 	Used       bool
 }
 
@@ -29,10 +31,12 @@ func fromPostgres(g postgresGrant) grants.Grant {
 		SourceType: g.SourceType,
 		SourceID:   g.SourceID,
 		CreatedAt:  g.CreatedAt,
+		UsedAt:     g.UsedAt,
 		Scopes:     []string(g.Scopes),
 		ProfileID:  g.ProfileID,
 		ClientID:   g.ClientID,
-		IP:         g.IP,
+		CreateIP:   g.CreateIP,
+		UseIP:      g.UseIP,
 		Used:       g.Used,
 	}
 }
@@ -43,10 +47,12 @@ func toPostgres(g grants.Grant) postgresGrant {
 		SourceType: g.SourceType,
 		SourceID:   g.SourceID,
 		CreatedAt:  g.CreatedAt,
+		UsedAt:     g.UsedAt,
 		Scopes:     pqarrays.StringArray(g.Scopes),
 		ProfileID:  g.ProfileID,
 		ClientID:   g.ClientID,
-		IP:         g.IP,
+		CreateIP:   g.CreateIP,
+		UseIP:      g.UseIP,
 		Used:       g.Used,
 	}
 }

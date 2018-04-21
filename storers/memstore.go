@@ -83,11 +83,11 @@ func (m *Memstore) CreateGrant(ctx context.Context, g grants.Grant) error {
 	return nil
 }
 
-func (m *Memstore) ExchangeGrant(ctx context.Context, id string) (grants.Grant, error) {
+func (m *Memstore) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
 	txn := m.db.Txn(true)
 	defer txn.Abort()
 
-	grant, err := txn.First("grant", "id", id)
+	grant, err := txn.First("grant", "id", g.Grant)
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -100,6 +100,8 @@ func (m *Memstore) ExchangeGrant(ctx context.Context, id string) (grants.Grant, 
 	}
 	newGrant := *grant.(*grants.Grant)
 	newGrant.Used = true
+	newGrant.UseIP = g.IP
+	newGrant.UsedAt = g.Time
 
 	err = txn.Insert("grant", &newGrant)
 	if err != nil {
