@@ -61,6 +61,7 @@ func exchangeGrantGetSQL(id string) *pan.Query {
 }
 
 func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+	// exchange the grant
 	query := exchangeGrantUpdateSQL(g)
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
@@ -70,10 +71,19 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	// figure out how many rows exchanging affected
 	count, err := result.RowsAffected()
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	// if we affected one or more rows, the exchange was
+	// successfull, return the grant and we're done
+	if count >= 1 {
+		return fromPostgres(grant), nil
+	}
+	// if we affected fewer than one rows, the grant
+	// wasn't successful. Now we need to know why.
+	// We need to get the grant to find out
 	query = exchangeGrantGetSQL(g.Grant)
 	queryStr, err = query.PostgreSQLString()
 	if err != nil {
@@ -93,11 +103,14 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 	if err = rows.Err(); err != nil {
 		return fromPostgres(grant), err
 	}
+	// if the grant doesn't exist in the Storer, that's an
+	// ErrGrantNotFound error
 	if grant.ID == "" {
 		return fromPostgres(grant), grants.ErrGrantNotFound
 	}
-	if count < 1 {
-		return grants.Grant{}, grants.ErrGrantAlreadyUsed
-	}
-	return fromPostgres(grant), nil
+	// if the grant does exist in the Storer, the only reason
+	// the exchange wouldn't have used it would be because it
+	// has already been used. In that case, we want an
+	// ErrGrantAlreadyUsed error.
+	return grants.Grant{}, grants.ErrGrantAlreadyUsed
 }
