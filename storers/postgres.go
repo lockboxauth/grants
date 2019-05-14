@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"impractical.co/auth/grants"
+	yall "yall.in"
 
 	"github.com/lib/pq"
 
@@ -15,8 +16,8 @@ type Postgres struct {
 	db *sql.DB
 }
 
-func NewPostgres(ctx context.Context, conn *sql.DB) (Postgres, error) {
-	return Postgres{db: conn}, nil
+func NewPostgres(ctx context.Context, conn *sql.DB) Postgres {
+	return Postgres{db: conn}
 }
 
 func createGrantSQL(grant postgresGrant) *pan.Query {
@@ -61,12 +62,14 @@ func exchangeGrantGetSQL(id string) *pan.Query {
 }
 
 func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+	log := yall.FromContext(ctx).WithField("grant", g.Grant)
 	// exchange the grant
 	query := exchangeGrantUpdateSQL(g)
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running update portion of grant exchange query")
 	result, err := p.db.Exec(queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
@@ -76,19 +79,13 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 	if err != nil {
 		return grants.Grant{}, err
 	}
-	// if we affected one or more rows, the exchange was
-	// successfull, return the grant and we're done
-	if count >= 1 {
-		return fromPostgres(grant), nil
-	}
-	// if we affected fewer than one rows, the grant
-	// wasn't successful. Now we need to know why.
-	// We need to get the grant to find out
+	log.WithField("rows_affected", count).Debug("successfully executed query")
 	query = exchangeGrantGetSQL(g.Grant)
 	queryStr, err = query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant exchange query")
 	rows, err := p.db.Query(queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
@@ -103,6 +100,14 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 	if err = rows.Err(); err != nil {
 		return fromPostgres(grant), err
 	}
+	// if we affected one or more rows, the exchange was
+	// successfull, return the grant and we're done
+	if count >= 1 {
+		return fromPostgres(grant), nil
+	}
+	// if we affected fewer than one rows, the grant
+	// wasn't successful.
+
 	// if the grant doesn't exist in the Storer, that's an
 	// ErrGrantNotFound error
 	if grant.ID == "" {

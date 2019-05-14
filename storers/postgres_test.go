@@ -81,11 +81,7 @@ func (p *PostgresFactory) NewStorer(ctx context.Context) (grants.Storer, error) 
 		return nil, err
 	}
 
-	storer, err := NewPostgres(ctx, newConn)
-	if err != nil {
-		return nil, err
-	}
-
+	storer := NewPostgres(ctx, newConn)
 	return storer, nil
 }
 

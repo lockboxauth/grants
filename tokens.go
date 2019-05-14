@@ -2,31 +2,34 @@ package grants
 
 import (
 	"context"
+	"time"
 
+	uuid "github.com/hashicorp/go-uuid"
 	"impractical.co/auth/sessions"
 	"impractical.co/auth/tokens"
 	yall "yall.in"
 )
 
+// TODO: move this to the oauth2 package, it has no business being in this package
+
 // IssueRefreshToken creates a Refresh Token and stores it in the service indicated by
 // `refresh` on `d`. It fills the token with the appropriate values from `grant`, sets
 // any unset defaults, and stores the token before returning it.
 func (d Dependencies) IssueRefreshToken(ctx context.Context, grant Grant) (string, error) {
-	t := tokens.RefreshToken{
+	t, err := tokens.FillTokenDefaults(tokens.RefreshToken{
 		CreatedFrom: grant.ID,
 		Scopes:      grant.Scopes,
 		ProfileID:   grant.ProfileID,
 		ClientID:    grant.ClientID,
-	}
-	t, err := tokens.FillTokenDefaults(t)
+	})
 	if err != nil {
 		return "", err
 	}
-	token, err := d.refresh.CreateJWT(ctx, t)
+	token, err := d.Refresh.CreateJWT(ctx, t)
 	if err != nil {
 		return "", err
 	}
-	err = d.refresh.Storer.CreateToken(ctx, t)
+	err = d.Refresh.Storer.CreateToken(ctx, t)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +39,7 @@ func (d Dependencies) IssueRefreshToken(ctx context.Context, grant Grant) (strin
 // ValidateRefreshToken verifies that a refresh token is valid and for the specified
 // client, returning the struct representation of valid tokens.
 func (d Dependencies) ValidateRefreshToken(ctx context.Context, token, client string) (tokens.RefreshToken, error) {
-	tok, err := d.refresh.Validate(ctx, token)
+	tok, err := d.Refresh.Validate(ctx, token)
 	if err != nil {
 		return tokens.RefreshToken{}, err
 	}
@@ -50,7 +53,7 @@ func (d Dependencies) ValidateRefreshToken(ctx context.Context, token, client st
 // UseRefreshToken marks a refresh token as used, making it so the token cannot be
 // reused.
 func (d Dependencies) UseRefreshToken(ctx context.Context, tokenID string) error {
-	err := d.refresh.Storer.UseToken(ctx, tokenID)
+	err := d.Refresh.Storer.UseToken(ctx, tokenID)
 	if err != nil && err != tokens.ErrTokenUsed {
 		yall.FromContext(ctx).WithField("token", tokenID).WithError(err).Error("Error using token.")
 		return err
@@ -64,10 +67,16 @@ func (d Dependencies) UseRefreshToken(ctx context.Context, tokenID string) error
 // IssueAccessToken creates a new access token from a Grant, filling in the values
 // appropriately.
 func (d Dependencies) IssueAccessToken(ctx context.Context, grant Grant) (string, error) {
-	return d.sessions.CreateJWT(ctx, sessions.AccessToken{
+	id, err := uuid.GenerateUUID()
+	if err != nil {
+		return "", err
+	}
+	return d.Sessions.CreateJWT(ctx, sessions.AccessToken{
+		ID:          id,
 		CreatedFrom: grant.ID,
 		Scopes:      grant.Scopes,
 		ProfileID:   grant.ProfileID,
 		ClientID:    grant.ClientID,
+		CreatedAt:   time.Now(),
 	})
 }
