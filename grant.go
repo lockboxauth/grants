@@ -10,8 +10,6 @@ import (
 	"time"
 
 	uuid "github.com/hashicorp/go-uuid"
-	"impractical.co/auth/sessions"
-	"impractical.co/auth/tokens"
 	yall "yall.in"
 )
 
@@ -60,10 +58,8 @@ type Storer interface {
 
 // Dependencies bundles together the information needed to run the service.
 type Dependencies struct {
-	Storer   Storer                // the Storer to store Grants in
-	Refresh  tokens.Dependencies   // the service to create refresh tokens with
-	Sessions sessions.Dependencies // the service to create sessions with
-	Log      *yall.Logger          // the logger to use
+	Storer Storer       // the Storer to store Grants in
+	Log    *yall.Logger // the logger to use
 }
 
 // FillGrantDefaults sets any unset fields of Grant that have a default value.
