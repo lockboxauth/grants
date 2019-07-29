@@ -1,16 +1,10 @@
 package grants
 
-//go:generate go-bindata -pkg migrations -o migrations/generated.go sql/
-
-// TODO: refactor storers to match pattern
-
 import (
-	"context"
 	"errors"
 	"time"
 
 	uuid "github.com/hashicorp/go-uuid"
-	yall "yall.in"
 )
 
 var (
@@ -50,16 +44,9 @@ type GrantUse struct {
 	Time  time.Time // the time the exchange happened
 }
 
-// Storer is the interface that Grants are persisted and used through.
-type Storer interface {
-	CreateGrant(ctx context.Context, g Grant) error
-	ExchangeGrant(ctx context.Context, g GrantUse) (Grant, error)
-}
-
 // Dependencies bundles together the information needed to run the service.
 type Dependencies struct {
-	Storer Storer       // the Storer to store Grants in
-	Log    *yall.Logger // the logger to use
+	Storer Storer // the Storer to store Grants in
 }
 
 // FillGrantDefaults sets any unset fields of Grant that have a default value.

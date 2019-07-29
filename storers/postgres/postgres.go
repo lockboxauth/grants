@@ -1,4 +1,4 @@
-package storers
+package postgres
 
 import (
 	"context"
@@ -12,25 +12,42 @@ import (
 	"darlinggo.co/pan"
 )
 
-type Postgres struct {
+//go:generate go-bindata -pkg migrations -o migrations/generated.go sql/
+
+const (
+	// TestConnStringEnvVar is the name of the environment variable
+	// to set to the connection string when running tests.
+	TestConnStringEnvVar = "PG_TEST_DB"
+)
+
+// Storer is a PostgreSQL implementation of the Storer
+// interface.
+type Storer struct {
 	db *sql.DB
 }
 
-func NewPostgres(ctx context.Context, conn *sql.DB) Postgres {
-	return Postgres{db: conn}
+// NewStorer returns a PostgreSQL Storer instance that is ready
+// to be used as a Storer.
+func NewStorer(ctx context.Context, conn *sql.DB) Storer {
+	return Storer{db: conn}
 }
 
-func createGrantSQL(grant postgresGrant) *pan.Query {
+func createGrantSQL(grant Grant) *pan.Query {
 	return pan.Insert(grant)
 }
 
-func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
+// CreateGrant inserts the passed Grant into the Storer,
+// returning an ErrGrantAlreadyExists error if a Grant
+// with the same ID alreday exists in the Storer, or am
+// ErrGrantSourceAlreadyExists error if a Grant with the
+// same SourceType and SourceID already exists in the Storer.
+func (s Storer) CreateGrant(ctx context.Context, grant grants.Grant) error {
 	query := createGrantSQL(toPostgres(grant))
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return err
 	}
-	_, err = p.db.Exec(queryStr, query.Args()...)
+	_, err = s.db.Exec(queryStr, query.Args()...)
 	if e, ok := err.(*pq.Error); ok {
 		if e.Constraint == "grants_pkey" {
 			err = grants.ErrGrantAlreadyExists
@@ -42,7 +59,7 @@ func (p Postgres) CreateGrant(ctx context.Context, grant grants.Grant) error {
 }
 
 func exchangeGrantUpdateSQL(g grants.GrantUse) *pan.Query {
-	var grant postgresGrant
+	var grant Grant
 	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
 	query.Comparison(grant, "Used", "=", true)
 	query.Comparison(grant, "UseIP", "=", g.IP)
@@ -54,14 +71,23 @@ func exchangeGrantUpdateSQL(g grants.GrantUse) *pan.Query {
 }
 
 func exchangeGrantGetSQL(id string) *pan.Query {
-	var grant postgresGrant
+	var grant Grant
 	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
 	query.Where()
 	query.Comparison(grant, "ID", "=", id)
 	return query.Flush(" ")
 }
 
-func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+// ExchangeGrant applies the GrantUse to the Storer, marking
+// the Grant in the Storer with an ID matching the Grant
+// property of the GrantUse as used and recording metadata
+// about the IP and time the Grant was used. If no Grant
+// has an ID matching the Grant property of the GrantUse,
+// an ErrGrantNotFound error is returned. If the Grant in
+// the Storer with an ID matching the Grant propery of the
+// GrantUse is already marked as used, an ErrGrantAlreadyUsed
+// error will be returned.
+func (s Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
 	log := yall.FromContext(ctx).WithField("grant", g.Grant)
 	// exchange the grant
 	query := exchangeGrantUpdateSQL(g)
@@ -70,7 +96,7 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running update portion of grant exchange query")
-	result, err := p.db.Exec(queryStr, query.Args()...)
+	result, err := s.db.Exec(queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -86,11 +112,11 @@ func (p Postgres) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant exchange query")
-	rows, err := p.db.Query(queryStr, query.Args()...)
+	rows, err := s.db.Query(queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
 	}
-	var grant postgresGrant
+	var grant Grant
 	for rows.Next() {
 		err = pan.Unmarshal(rows, &grant)
 		if err != nil {

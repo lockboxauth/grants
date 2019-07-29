@@ -1,4 +1,4 @@
-package storers
+package postgres
 
 import (
 	"time"
@@ -7,7 +7,9 @@ import (
 	"impractical.co/pqarrays"
 )
 
-type postgresGrant struct {
+// Grant is a representation of a Grant
+// suitable for storage in our Storer.
+type Grant struct {
 	ID         string
 	SourceType string
 	SourceID   string
@@ -21,11 +23,13 @@ type postgresGrant struct {
 	Used       bool
 }
 
-func (p postgresGrant) GetSQLTableName() string {
+// GetSQLTableName allows us to use Grant with
+// pan.
+func (g Grant) GetSQLTableName() string {
 	return "grants"
 }
 
-func fromPostgres(g postgresGrant) grants.Grant {
+func fromPostgres(g Grant) grants.Grant {
 	return grants.Grant{
 		ID:         g.ID,
 		SourceType: g.SourceType,
@@ -41,8 +45,8 @@ func fromPostgres(g postgresGrant) grants.Grant {
 	}
 }
 
-func toPostgres(g grants.Grant) postgresGrant {
-	return postgresGrant{
+func toPostgres(g grants.Grant) Grant {
+	return Grant{
 		ID:         g.ID,
 		SourceType: g.SourceType,
 		SourceID:   g.SourceID,

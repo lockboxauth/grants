@@ -1,4 +1,4 @@
-package storers
+package memory
 
 import (
 	"context"
@@ -43,22 +43,31 @@ var (
 	}
 )
 
-type Memstore struct {
+// Storer is an in-memory implementation of the Storer
+// interface.
+type Storer struct {
 	db *memdb.MemDB
 }
 
-func NewMemstore() (*Memstore, error) {
+// NewStorer returns an in-memory Storer instance that is ready
+// to be used as a Storer.
+func NewStorer() (*Storer, error) {
 	db, err := memdb.NewMemDB(schema)
 	if err != nil {
 		return nil, err
 	}
-	return &Memstore{
+	return &Storer{
 		db: db,
 	}, nil
 }
 
-func (m *Memstore) CreateGrant(ctx context.Context, g grants.Grant) error {
-	txn := m.db.Txn(true)
+// CreateGrant inserts the passed Grant into the Storer,
+// returning an ErrGrantAlreadyExists error if a Grant
+// with the same ID alreday exists in the Storer, or am
+// ErrGrantSourceAlreadyExists error if a Grant with the
+// same SourceType and SourceID already exists in the Storer.
+func (s *Storer) CreateGrant(ctx context.Context, g grants.Grant) error {
+	txn := s.db.Txn(true)
 	defer txn.Abort()
 
 	exists, err := txn.First("grant", "id", g.ID)
@@ -83,8 +92,17 @@ func (m *Memstore) CreateGrant(ctx context.Context, g grants.Grant) error {
 	return nil
 }
 
-func (m *Memstore) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
-	txn := m.db.Txn(true)
+// ExchangeGrant applies the GrantUse to the Storer, marking
+// the Grant in the Storer with an ID matching the Grant
+// property of the GrantUse as used and recording metadata
+// about the IP and time the Grant was used. If no Grant
+// has an ID matching the Grant property of the GrantUse,
+// an ErrGrantNotFound error is returned. If the Grant in
+// the Storer with an ID matching the Grant propery of the
+// GrantUse is already marked as used, an ErrGrantAlreadyUsed
+// error will be returned.
+func (s *Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+	txn := s.db.Txn(true)
 	defer txn.Abort()
 
 	grant, err := txn.First("grant", "id", g.Grant)
