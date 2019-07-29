@@ -1,4 +1,4 @@
-module impractical.co/auth/grants
+module lockbox.dev/grants
 
 require (
 	darlinggo.co/pan v0.1.0

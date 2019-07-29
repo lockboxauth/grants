@@ -10,8 +10,8 @@ import (
 	"os"
 	"sync"
 
-	"impractical.co/auth/grants"
-	"impractical.co/auth/grants/storers/postgres/migrations"
+	"lockbox.dev/grants"
+	"lockbox.dev/grants/storers/postgres/migrations"
 
 	uuid "github.com/hashicorp/go-uuid"
 	migrate "github.com/rubenv/sql-migrate"

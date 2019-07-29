@@ -3,9 +3,9 @@ package memory
 import (
 	"context"
 
-	"impractical.co/auth/grants"
-
 	memdb "github.com/hashicorp/go-memdb"
+
+	"lockbox.dev/grants"
 )
 
 var (

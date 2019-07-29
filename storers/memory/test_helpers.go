@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 
-	"impractical.co/auth/grants"
+	"lockbox.dev/grants"
 )
 
 // Factory implements the grants.Factory interface

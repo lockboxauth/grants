@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 
-	"impractical.co/auth/grants"
-	yall "yall.in"
-
 	"github.com/lib/pq"
 
 	"darlinggo.co/pan"
+	yall "yall.in"
+
+	"lockbox.dev/grants"
 )
 
 //go:generate go-bindata -pkg migrations -o migrations/generated.go sql/

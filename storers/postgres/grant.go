@@ -3,8 +3,9 @@ package postgres
 import (
 	"time"
 
-	"impractical.co/auth/grants"
 	"impractical.co/pqarrays"
+
+	"lockbox.dev/grants"
 )
 
 // Grant is a representation of a Grant

@@ -12,12 +12,13 @@ import (
 	"time"
 
 	uuid "github.com/hashicorp/go-uuid"
-	"impractical.co/auth/grants"
-	"impractical.co/auth/grants/storers/memory"
-	"impractical.co/auth/grants/storers/postgres"
 	"impractical.co/pqarrays"
 	yall "yall.in"
 	"yall.in/colour"
+
+	"lockbox.dev/grants"
+	"lockbox.dev/grants/storers/memory"
+	"lockbox.dev/grants/storers/postgres"
 )
 
 type Factory interface {
