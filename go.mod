@@ -15,6 +15,6 @@ require (
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	google.golang.org/appengine v1.1.0 // indirect
 	gopkg.in/gorp.v1 v1.7.1 // indirect
-	impractical.co/pqarrays v0.0.0-20170820231347-970404683d98
+	impractical.co/pqarrays v0.1.0
 	yall.in v0.0.1
 )
