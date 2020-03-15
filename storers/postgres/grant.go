@@ -17,6 +17,7 @@ type Grant struct {
 	CreatedAt  time.Time
 	UsedAt     time.Time
 	Scopes     pqarrays.StringArray
+	AccountID  string
 	ProfileID  string
 	ClientID   string
 	CreateIP   string
@@ -38,6 +39,7 @@ func fromPostgres(g Grant) grants.Grant {
 		CreatedAt:  g.CreatedAt,
 		UsedAt:     g.UsedAt,
 		Scopes:     []string(g.Scopes),
+		AccountID:  g.AccountID,
 		ProfileID:  g.ProfileID,
 		ClientID:   g.ClientID,
 		CreateIP:   g.CreateIP,
@@ -54,6 +56,7 @@ func toPostgres(g grants.Grant) Grant {
 		CreatedAt:  g.CreatedAt,
 		UsedAt:     g.UsedAt,
 		Scopes:     pqarrays.StringArray(g.Scopes),
+		AccountID:  g.AccountID,
 		ProfileID:  g.ProfileID,
 		ClientID:   g.ClientID,
 		CreateIP:   g.CreateIP,

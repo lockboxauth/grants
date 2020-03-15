@@ -61,6 +61,9 @@ func compareGrants(grant1, grant2 grants.Grant) (success bool, field string, val
 	if grant1.ProfileID != grant2.ProfileID {
 		return false, "ProfileID", grant1.ProfileID, grant2.ProfileID
 	}
+	if grant1.AccountID != grant2.AccountID {
+		return false, "AccountID", grant1.AccountID, grant2.AccountID
+	}
 	if grant1.ClientID != grant2.ClientID {
 		return false, "ClientID", grant1.ClientID, grant2.ClientID
 	}
@@ -132,6 +135,7 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
 			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
 			ProfileID:  "tester",
+			AccountID:  "test123",
 			ClientID:   "testrunner",
 			CreateIP:   "192.168.1.2",
 		}
@@ -165,6 +169,7 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
 			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
 			ProfileID:  "tester",
+			AccountID:  "test123",
 			ClientID:   "testrunner",
 			CreateIP:   "192.168.1.2",
 		}
@@ -207,6 +212,7 @@ func TestCreateDuplicateGrant(t *testing.T) {
 			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
 			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
 			ProfileID:  "tester",
+			AccountID:  "test123",
 			ClientID:   "testrunner",
 			CreateIP:   "192.168.1.2",
 		}
@@ -233,6 +239,7 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
 			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
 			ProfileID:  "tester",
+			AccountID:  "test123",
 			ClientID:   "testrunner",
 			CreateIP:   "192.168.1.2",
 		}

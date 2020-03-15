@@ -2,6 +2,7 @@
 // sources:
 // sql/20160723_init.sql
 // sql/20180421_0_ip.sql
+// sql/20200314_0_account.sql
 // DO NOT EDIT!
 
 package migrations
@@ -109,6 +110,26 @@ func sql20180421_0_ipSql() (*asset, error) {
 	return a, nil
 }
 
+var _sql20200314_0_accountSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xd2\xd5\x55\xd0\xce\xcd\x4c\x2f\x4a\x2c\x49\x55\x08\x2d\xe0\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2f\x4a\xcc\x2b\x29\x56\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x4c\x4e\xce\x2f\xcd\x2b\x89\xcf\x4c\x51\x08\x73\x0c\x72\xf6\x70\x0c\xd2\x30\x36\xd3\x54\xf0\xf3\x0f\x51\xf0\x0b\xf5\xf1\x51\x70\x71\x75\x73\x0c\xf5\x09\x51\x50\x57\xb7\xe6\xe2\x42\x36\xd9\x25\xbf\x3c\x0f\x9b\xd9\x2e\x41\xfe\x01\x30\xc3\x3d\xdd\x14\x5c\x23\x3c\x83\x43\x82\x91\xac\xb1\xe6\x02\x04\x00\x00\xff\xff\x3c\x48\x7c\xd8\xa0\x00\x00\x00")
+
+func sql20200314_0_accountSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_sql20200314_0_accountSql,
+		"sql/20200314_0_account.sql",
+	)
+}
+
+func sql20200314_0_accountSql() (*asset, error) {
+	bytes, err := sql20200314_0_accountSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "sql/20200314_0_account.sql", size: 160, mode: os.FileMode(436), modTime: time.Unix(1584233664, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -161,8 +182,9 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"sql/20160723_init.sql": sql20160723_initSql,
-	"sql/20180421_0_ip.sql": sql20180421_0_ipSql,
+	"sql/20160723_init.sql":      sql20160723_initSql,
+	"sql/20180421_0_ip.sql":      sql20180421_0_ipSql,
+	"sql/20200314_0_account.sql": sql20200314_0_accountSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -204,10 +226,12 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	"sql": &bintree{nil, map[string]*bintree{
-		"20160723_init.sql": &bintree{sql20160723_initSql, map[string]*bintree{}},
-		"20180421_0_ip.sql": &bintree{sql20180421_0_ipSql, map[string]*bintree{}},
+	"sql": {nil, map[string]*bintree{
+		"20160723_init.sql":      {sql20160723_initSql, map[string]*bintree{}},
+		"20180421_0_ip.sql":      {sql20180421_0_ipSql, map[string]*bintree{}},
+		"20200314_0_account.sql": {sql20200314_0_accountSql, map[string]*bintree{}},
 	}},
 }}
 
@@ -257,4 +281,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

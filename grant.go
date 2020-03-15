@@ -30,7 +30,8 @@ type Grant struct {
 	CreatedAt  time.Time // when the authorization was granted
 	UsedAt     time.Time // when the authorization was exchanged for a session
 	Scopes     []string  // the scopes of access the user granted
-	ProfileID  string    // the unique ID representing the user account
+	AccountID  string    // the ID of the account that was used to grant access
+	ProfileID  string    // the unique ID representing the user
 	ClientID   string    // the client access was granted to
 	CreateIP   string    // the IP the user granted access from
 	UseIP      string    // the IP the access was exchanged for a session from
