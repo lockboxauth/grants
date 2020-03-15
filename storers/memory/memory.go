@@ -129,3 +129,20 @@ func (s *Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.G
 
 	return newGrant, nil
 }
+
+// GetGrant retrieves the Grant specified by `id` from the
+// Storer. If no Grant has an ID matching the `id` parameter,
+// an ErrGrantNotFound error is returned.
+func (s *Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
+	txn := s.db.Txn(false)
+	grant, err := txn.First("grant", "id", id)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	if grant == nil {
+		return grants.Grant{}, grants.ErrGrantNotFound
+	}
+	txn.Commit()
+
+	return *grant.(*grants.Grant), nil
+}

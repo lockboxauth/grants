@@ -160,6 +160,36 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 	})
 }
 
+func TestCreateAndGetGrant(t *testing.T) {
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		grant := grants.Grant{
+			ID:         uuidOrFail(t),
+			SourceType: "manual",
+			SourceID:   "TestCreateAndExchangeGrant",
+			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:  "tester",
+			AccountID:  "test123",
+			ClientID:   "testrunner",
+			CreateIP:   "192.168.1.2",
+		}
+		err := storer.CreateGrant(ctx, grant)
+		if err != nil {
+			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+		}
+
+		resp, err := storer.GetGrant(ctx, grant.ID)
+		if err != nil {
+			t.Errorf("Unexpected error retrieving grant from %T: %+v\n", storer, err)
+		}
+		expectation := grant
+		ok, field, expected, result := compareGrants(expectation, resp)
+		if !ok {
+			t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
+		}
+	})
+}
+
 func TestCreateAndExchangeUsedGrant(t *testing.T) {
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
@@ -197,6 +227,15 @@ func TestExchangeNonExistentGrant(t *testing.T) {
 			IP:    "8.8.8.8",
 			Time:  time.Now().Round(time.Millisecond),
 		})
+		if err != grants.ErrGrantNotFound {
+			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
+		}
+	})
+}
+
+func TestGetNonExistentGrant(t *testing.T) {
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		_, err := storer.GetGrant(ctx, uuidOrFail(t))
 		if err != grants.ErrGrantNotFound {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 		}

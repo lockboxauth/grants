@@ -145,3 +145,42 @@ func (s Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Gr
 	// ErrGrantAlreadyUsed error.
 	return grants.Grant{}, grants.ErrGrantAlreadyUsed
 }
+
+func getGrantSQL(id string) *pan.Query {
+	var grant Grant
+	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
+	query.Where()
+	query.Comparison(grant, "ID", "=", id)
+	return query.Flush(" ")
+}
+
+// GetGrant retrieves the Grant specified by `id` from the Storer,
+// returning an ErrGrantNotFound error if no Grant in the Storer
+// has an ID matching `id`.
+func (s Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
+	log := yall.FromContext(ctx).WithField("grant", id)
+	query := getGrantSQL(id)
+	queryStr, err := query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant query")
+	rows, err := s.db.Query(queryStr, query.Args()...)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	var grant Grant
+	for rows.Next() {
+		err = pan.Unmarshal(rows, &grant)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return fromPostgres(grant), err
+	}
+	if grant.ID == "" {
+		return fromPostgres(grant), grants.ErrGrantNotFound
+	}
+	return fromPostgres(grant), nil
+}
