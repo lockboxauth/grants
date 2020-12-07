@@ -26,7 +26,7 @@ var (
 type Grant struct {
 	ID         string    // a unique ID
 	SourceType string    // the type of the source used to identify the user
-	SourceID   string    // the ID of the source used to identify the user
+	SourceID   string    // the ID of the source used to identify the user; should be unique across grants
 	CreatedAt  time.Time // when the authorization was granted
 	UsedAt     time.Time // when the authorization was exchanged for a session
 	Scopes     []string  // the scopes of access the user granted
