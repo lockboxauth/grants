@@ -184,3 +184,44 @@ func (s Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
 	}
 	return fromPostgres(grant), nil
 }
+
+func getGrantBySourceSQL(sourceType, sourceID string) *pan.Query {
+	var grant Grant
+	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
+	query.Where()
+	query.Comparison(grant, "SourceType", "=", sourceType)
+	query.Comparison(grant, "SourceID", "=", sourceID)
+	return query.Flush(" AND ")
+}
+
+// GetGrantBySource retrieves the Grant specified by `sourceType` and
+// `sourceID` from the Storer, returning an ErrGrantNotFound error if no Grant
+// in the Storer has a SourceType and SourceID matching those parameters.
+func (s Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID string) (grants.Grant, error) {
+	log := yall.FromContext(ctx).WithField("source_type", sourceType)
+	log = log.WithField("source_id", sourceID)
+	query := getGrantBySourceSQL(sourceType, sourceID)
+	queryStr, err := query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant by source query")
+	rows, err := s.db.Query(queryStr, query.Args()...)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	var grant Grant
+	for rows.Next() {
+		err = pan.Unmarshal(rows, &grant)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return fromPostgres(grant), err
+	}
+	if grant.ID == "" {
+		return fromPostgres(grant), grants.ErrGrantNotFound
+	}
+	return fromPostgres(grant), nil
+}

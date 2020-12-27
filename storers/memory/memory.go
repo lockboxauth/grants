@@ -146,3 +146,20 @@ func (s *Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) 
 
 	return *grant.(*grants.Grant), nil
 }
+
+// GetGrantBySource retrieves the Grant specified by `sourceType` and
+// `sourceID` from the Storer. If no Grant has a source type and source ID
+// matching these parameters, an ErrGrantNotFound error is returned.
+func (s *Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID string) (grants.Grant, error) {
+	txn := s.db.Txn(false)
+	grant, err := txn.First("grant", "source", sourceType, sourceID)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	if grant == nil {
+		return grants.Grant{}, grants.ErrGrantNotFound
+	}
+	txn.Commit()
+
+	return *grant.(*grants.Grant), nil
+}

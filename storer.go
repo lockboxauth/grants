@@ -7,4 +7,5 @@ type Storer interface {
 	CreateGrant(ctx context.Context, g Grant) error
 	ExchangeGrant(ctx context.Context, g GrantUse) (Grant, error)
 	GetGrant(ctx context.Context, id string) (Grant, error)
+	GetGrantBySource(ctx context.Context, sourceType, sourceID string) (Grant, error)
 }
