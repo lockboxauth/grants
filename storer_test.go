@@ -70,7 +70,7 @@ func compareGrants(grant1, grant2 grants.Grant) (success bool, field string, val
 	if grant1.CreateIP != grant2.CreateIP {
 		return false, "CreateIP", grant1.CreateIP, grant2.CreateIP
 	}
-	if grant2.UseIP != grant2.UseIP {
+	if grant1.UseIP != grant2.UseIP {
 		return false, "UseIP", grant1.UseIP, grant2.UseIP
 	}
 	if grant1.Used != grant2.Used {
