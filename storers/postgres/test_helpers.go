@@ -90,12 +90,18 @@ func (f *Factory) TeardownStorers() error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	for table, conn := range f.databases {
-		conn.Close()
-		_, err := f.db.Exec("DROP DATABASE " + table + ";")
+		err := conn.Close()
+		if err != nil {
+			return err
+		}
+		_, err = f.db.Exec("DROP DATABASE " + table + ";")
 		if err != nil {
 			return err
 		}
 	}
-	f.db.Close()
+	err := f.db.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
