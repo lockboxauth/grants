@@ -1,6 +1,6 @@
 package grants
 
-// testing CI with env
+// testing CI with golang:1.16
 
 import "context"
 
