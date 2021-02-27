@@ -12,8 +12,6 @@ import (
 	"lockbox.dev/grants"
 )
 
-//go:generate go-bindata -pkg migrations -o migrations/generated.go sql/
-
 const (
 	// TestConnStringEnvVar is the name of the environment variable
 	// to set to the connection string when running tests.

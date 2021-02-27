@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"lockbox.dev/grants"
-	"lockbox.dev/grants/storers/postgres/migrations"
 
 	uuid "github.com/hashicorp/go-uuid"
 	migrate "github.com/rubenv/sql-migrate"
@@ -76,12 +75,7 @@ func (f *Factory) NewStorer(ctx context.Context) (grants.Storer, error) {
 	f.databases[table] = newConn
 	f.lock.Unlock()
 
-	migrations := &migrate.AssetMigrationSource{
-		Asset:    migrations.Asset,
-		AssetDir: migrations.AssetDir,
-		Dir:      "sql",
-	}
-	_, err = migrate.Exec(newConn, "postgres", migrations, migrate.Up)
+	err = ApplyMigrations(newConn, migrate.Up)
 	if err != nil {
 		return nil, err
 	}
