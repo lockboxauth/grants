@@ -4,7 +4,7 @@ require (
 	darlinggo.co/pan v0.2.0
 	github.com/hashicorp/go-memdb v1.3.0
 	github.com/hashicorp/go-uuid v1.0.2
-	github.com/lib/pq v1.10.0
+	github.com/lib/pq v1.10.4
 	github.com/rubenv/sql-migrate v1.0.0
 	impractical.co/pqarrays v0.1.0
 	yall.in v0.0.7
