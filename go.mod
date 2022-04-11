@@ -3,7 +3,7 @@ module lockbox.dev/grants
 require (
 	darlinggo.co/pan v0.2.0
 	github.com/hashicorp/go-memdb v1.3.2
-	github.com/hashicorp/go-uuid v1.0.2
+	github.com/hashicorp/go-uuid v1.0.3
 	github.com/lib/pq v1.10.5
 	github.com/rubenv/sql-migrate v1.1.1
 	impractical.co/pqarrays v0.1.0
