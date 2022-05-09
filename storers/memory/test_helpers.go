@@ -13,12 +13,12 @@ import (
 type Factory struct{}
 
 // NewStorer creates a new Storer and returns it.
-func (f Factory) NewStorer(ctx context.Context) (grants.Storer, error) {
+func (Factory) NewStorer(_ context.Context) (grants.Storer, error) { //nolint:ireturn // interface requires returning an interface
 	return NewStorer()
 }
 
 // TeardownStorers does nothing, as Storers need no
 // teardown. It exists to fill the Factory interface.
-func (f Factory) TeardownStorers() error {
+func (Factory) TeardownStorers() error {
 	return nil
 }

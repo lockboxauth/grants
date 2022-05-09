@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/lib/pq"
 
@@ -26,7 +27,7 @@ type Storer struct {
 
 // NewStorer returns a PostgreSQL Storer instance that is ready
 // to be used as a Storer.
-func NewStorer(ctx context.Context, conn *sql.DB) Storer {
+func NewStorer(_ context.Context, conn *sql.DB) Storer {
 	return Storer{db: conn}
 }
 
@@ -39,31 +40,33 @@ func createGrantSQL(grant Grant) *pan.Query {
 // with the same ID alreday exists in the Storer, or am
 // ErrGrantSourceAlreadyExists error if a Grant with the
 // same SourceType and SourceID already exists in the Storer.
-func (s Storer) CreateGrant(ctx context.Context, grant grants.Grant) error {
+func (s Storer) CreateGrant(_ context.Context, grant grants.Grant) error {
 	query := createGrantSQL(toPostgres(grant))
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return err
 	}
 	_, err = s.db.Exec(queryStr, query.Args()...)
-	if e, ok := err.(*pq.Error); ok {
-		if e.Constraint == "grants_pkey" {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		switch pqErr.Constraint {
+		case "grants_pkey":
 			err = grants.ErrGrantAlreadyExists
-		} else if e.Constraint == "grants_source_type_source_id_key" {
+		case "grants_source_type_source_id_key":
 			err = grants.ErrGrantSourceAlreadyUsed
 		}
 	}
 	return err
 }
 
-func exchangeGrantUpdateSQL(g grants.GrantUse) *pan.Query {
+func exchangeGrantUpdateSQL(use grants.GrantUse) *pan.Query {
 	var grant Grant
 	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
 	query.Comparison(grant, "Used", "=", true)
-	query.Comparison(grant, "UseIP", "=", g.IP)
-	query.Comparison(grant, "UsedAt", "=", g.Time)
+	query.Comparison(grant, "UseIP", "=", use.IP)
+	query.Comparison(grant, "UsedAt", "=", use.Time)
 	query.Flush(", ").Where()
-	query.Comparison(grant, "ID", "=", g.Grant)
+	query.Comparison(grant, "ID", "=", use.Grant)
 	query.Comparison(grant, "Used", "=", false)
 	return query.Flush(" AND ")
 }
@@ -85,10 +88,10 @@ func exchangeGrantGetSQL(id string) *pan.Query {
 // the Storer with an ID matching the Grant propery of the
 // GrantUse is already marked as used, an ErrGrantAlreadyUsed
 // error will be returned.
-func (s Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
-	log := yall.FromContext(ctx).WithField("grant", g.Grant)
+func (s Storer) ExchangeGrant(ctx context.Context, use grants.GrantUse) (grants.Grant, error) {
+	log := yall.FromContext(ctx).WithField("grant", use.Grant)
 	// exchange the grant
-	query := exchangeGrantUpdateSQL(g)
+	query := exchangeGrantUpdateSQL(use)
 	queryStr, err := query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err
@@ -104,16 +107,17 @@ func (s Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Gr
 		return grants.Grant{}, err
 	}
 	log.WithField("rows_affected", count).Debug("successfully executed query")
-	query = exchangeGrantGetSQL(g.Grant)
+	query = exchangeGrantGetSQL(use.Grant)
 	queryStr, err = query.PostgreSQLString()
 	if err != nil {
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant exchange query")
-	rows, err := s.db.Query(queryStr, query.Args()...)
+	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	defer closeRows(ctx, rows)
 	var grant Grant
 	for rows.Next() {
 		err = pan.Unmarshal(rows, &grant)
@@ -125,7 +129,7 @@ func (s Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Gr
 		return fromPostgres(grant), err
 	}
 	// if we affected one or more rows, the exchange was
-	// successfull, return the grant and we're done
+	// successful, return the grant and we're done
 	if count >= 1 {
 		return fromPostgres(grant), nil
 	}
@@ -163,10 +167,11 @@ func (s Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant query")
-	rows, err := s.db.Query(queryStr, query.Args()...)
+	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	defer closeRows(ctx, rows)
 	var grant Grant
 	for rows.Next() {
 		err = pan.Unmarshal(rows, &grant)
@@ -204,10 +209,11 @@ func (s Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID strin
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant by source query")
-	rows, err := s.db.Query(queryStr, query.Args()...)
+	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
+	defer closeRows(ctx, rows)
 	var grant Grant
 	for rows.Next() {
 		err = pan.Unmarshal(rows, &grant)
@@ -222,4 +228,10 @@ func (s Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID strin
 		return fromPostgres(grant), grants.ErrGrantNotFound
 	}
 	return fromPostgres(grant), nil
+}
+
+func closeRows(ctx context.Context, rows *sql.Rows) {
+	if err := rows.Close(); err != nil {
+		yall.FromContext(ctx).WithError(err).Error("failed to close rows")
+	}
 }

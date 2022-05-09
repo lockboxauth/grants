@@ -3,14 +3,15 @@ package grants_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	uuid "github.com/hashicorp/go-uuid"
 	"impractical.co/pqarrays"
 	yall "yall.in"
@@ -35,51 +36,6 @@ func uuidOrFail(t *testing.T) string {
 		t.Fatalf("Unexpected error generating ID: %s", err.Error())
 	}
 	return id
-}
-
-func compareGrants(grant1, grant2 grants.Grant) (success bool, field string, val1, val2 interface{}) {
-	if grant1.ID != grant2.ID {
-		return false, "ID", grant1.ID, grant2.ID
-	}
-	if grant1.SourceType != grant2.SourceType {
-		return false, "SourceType", grant1.SourceType, grant2.SourceType
-	}
-	if grant1.SourceID != grant2.SourceID {
-		return false, "SourceID", grant1.SourceID, grant2.SourceID
-	}
-	if !grant1.CreatedAt.Equal(grant2.CreatedAt) {
-		return false, "CreatedAt", grant1.CreatedAt, grant2.CreatedAt
-	}
-	if len(grant1.Scopes) != len(grant2.Scopes) {
-		return false, "Scopes", grant1.Scopes, grant2.Scopes
-	}
-	for pos, scope := range grant1.Scopes {
-		if grant2.Scopes[pos] != scope {
-			return false, "Scopes#" + strconv.Itoa(pos), grant1.Scopes, grant2.Scopes
-		}
-	}
-	if grant1.ProfileID != grant2.ProfileID {
-		return false, "ProfileID", grant1.ProfileID, grant2.ProfileID
-	}
-	if grant1.AccountID != grant2.AccountID {
-		return false, "AccountID", grant1.AccountID, grant2.AccountID
-	}
-	if grant1.ClientID != grant2.ClientID {
-		return false, "ClientID", grant1.ClientID, grant2.ClientID
-	}
-	if grant1.CreateIP != grant2.CreateIP {
-		return false, "CreateIP", grant1.CreateIP, grant2.CreateIP
-	}
-	if grant1.UseIP != grant2.UseIP {
-		return false, "UseIP", grant1.UseIP, grant2.UseIP
-	}
-	if grant1.Used != grant2.Used {
-		return false, "Used", grant1.Used, grant2.Used
-	}
-	if !grant1.UsedAt.Equal(grant2.UsedAt) {
-		return false, "UsedAt", grant1.UsedAt, grant2.UsedAt
-	}
-	return true, "", nil, nil
 }
 
 func TestMain(m *testing.M) {
@@ -110,8 +66,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func runTest(t *testing.T, f func(*testing.T, grants.Storer, context.Context)) {
-	t.Parallel()
+func runTest(t *testing.T, testFunc func(*testing.T, grants.Storer, context.Context)) {
 	logger := yall.New(colour.New(os.Stdout, yall.Debug))
 	for _, factory := range factories {
 		ctx := yall.InContext(context.Background(), logger)
@@ -121,12 +76,14 @@ func runTest(t *testing.T, f func(*testing.T, grants.Storer, context.Context)) {
 		}
 		t.Run(fmt.Sprintf("Storer=%T", storer), func(t *testing.T) {
 			t.Parallel()
-			f(t, storer, ctx)
+			testFunc(t, storer, ctx)
 		})
 	}
 }
 
 func TestCreateAndExchangeGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -153,14 +110,15 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 		expectation.Used = true
 		expectation.UseIP = "8.8.8.8"
 		expectation.UsedAt = use.Time
-		ok, field, expected, result := compareGrants(expectation, resp)
-		if !ok {
-			t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
+		if diff := cmp.Diff(expectation, resp); diff != "" {
+			t.Errorf("Unexpected diff (-wanted, +got): %s", diff)
 		}
 	})
 }
 
 func TestCreateAndGetGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -183,14 +141,15 @@ func TestCreateAndGetGrant(t *testing.T) {
 			t.Errorf("Unexpected error retrieving grant from %T: %+v\n", storer, err)
 		}
 		expectation := grant
-		ok, field, expected, result := compareGrants(expectation, resp)
-		if !ok {
-			t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
+		if diff := cmp.Diff(expectation, resp); diff != "" {
+			t.Errorf("Unexpected diff (-wanted, +got): %s", diff)
 		}
 	})
 }
 
 func TestCreateAndGetGrantBySource(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -213,14 +172,15 @@ func TestCreateAndGetGrantBySource(t *testing.T) {
 			t.Errorf("Unexpected error retrieving grant from %T: %+v\n", storer, err)
 		}
 		expectation := grant
-		ok, field, expected, result := compareGrants(expectation, resp)
-		if !ok {
-			t.Errorf("Expected %s to be %v in %T, got %v\n", field, expected, storer, result)
+		if diff := cmp.Diff(expectation, resp); diff != "" {
+			t.Errorf("Unexpected diff (-wanted, +got): %s", diff)
 		}
 	})
 }
 
 func TestCreateAndExchangeUsedGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -244,44 +204,52 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 		}
 
 		_, err = storer.ExchangeGrant(ctx, grants.GrantUse{Grant: grant.ID, IP: "5.6.7.8", Time: time.Now().Round(time.Millisecond)})
-		if err != grants.ErrGrantAlreadyUsed {
+		if !errors.Is(err, grants.ErrGrantAlreadyUsed) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyUsed, storer, err)
 		}
 	})
 }
 
 func TestExchangeNonExistentGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		_, err := storer.ExchangeGrant(ctx, grants.GrantUse{
 			Grant: uuidOrFail(t),
 			IP:    "8.8.8.8",
 			Time:  time.Now().Round(time.Millisecond),
 		})
-		if err != grants.ErrGrantNotFound {
+		if !errors.Is(err, grants.ErrGrantNotFound) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 		}
 	})
 }
 
 func TestGetNonExistentGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		_, err := storer.GetGrant(ctx, uuidOrFail(t))
-		if err != grants.ErrGrantNotFound {
+		if !errors.Is(err, grants.ErrGrantNotFound) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 		}
 	})
 }
 
 func TestGetNonExistentGrantBySource(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		_, err := storer.GetGrantBySource(ctx, "test", "non-existent-grant")
-		if err != grants.ErrGrantNotFound {
+		if !errors.Is(err, grants.ErrGrantNotFound) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 		}
 	})
 }
 
 func TestCreateDuplicateGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -302,13 +270,15 @@ func TestCreateDuplicateGrant(t *testing.T) {
 		grant.SourceID += "!"
 
 		err = storer.CreateGrant(ctx, grant)
-		if err != grants.ErrGrantAlreadyExists {
+		if !errors.Is(err, grants.ErrGrantAlreadyExists) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyExists, storer, err)
 		}
 	})
 }
 
 func TestCreateDuplicateSourceGrant(t *testing.T) {
+	t.Parallel()
+
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
 			ID:         uuidOrFail(t),
@@ -329,7 +299,7 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 		grant.ID = uuidOrFail(t)
 
 		err = storer.CreateGrant(ctx, grant)
-		if err != grants.ErrGrantSourceAlreadyUsed {
+		if !errors.Is(err, grants.ErrGrantSourceAlreadyUsed) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantSourceAlreadyUsed, storer, err)
 		}
 	})

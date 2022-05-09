@@ -27,40 +27,40 @@ type Grant struct {
 
 // GetSQLTableName allows us to use Grant with
 // pan.
-func (g Grant) GetSQLTableName() string {
+func (Grant) GetSQLTableName() string {
 	return "grants"
 }
 
-func fromPostgres(g Grant) grants.Grant {
+func fromPostgres(grant Grant) grants.Grant {
 	return grants.Grant{
-		ID:         g.ID,
-		SourceType: g.SourceType,
-		SourceID:   g.SourceID,
-		CreatedAt:  g.CreatedAt,
-		UsedAt:     g.UsedAt,
-		Scopes:     []string(g.Scopes),
-		AccountID:  g.AccountID,
-		ProfileID:  g.ProfileID,
-		ClientID:   g.ClientID,
-		CreateIP:   g.CreateIP,
-		UseIP:      g.UseIP,
-		Used:       g.Used,
+		ID:         grant.ID,
+		SourceType: grant.SourceType,
+		SourceID:   grant.SourceID,
+		CreatedAt:  grant.CreatedAt,
+		UsedAt:     grant.UsedAt,
+		Scopes:     []string(grant.Scopes),
+		AccountID:  grant.AccountID,
+		ProfileID:  grant.ProfileID,
+		ClientID:   grant.ClientID,
+		CreateIP:   grant.CreateIP,
+		UseIP:      grant.UseIP,
+		Used:       grant.Used,
 	}
 }
 
-func toPostgres(g grants.Grant) Grant {
+func toPostgres(grant grants.Grant) Grant {
 	return Grant{
-		ID:         g.ID,
-		SourceType: g.SourceType,
-		SourceID:   g.SourceID,
-		CreatedAt:  g.CreatedAt,
-		UsedAt:     g.UsedAt,
-		Scopes:     pqarrays.StringArray(g.Scopes),
-		AccountID:  g.AccountID,
-		ProfileID:  g.ProfileID,
-		ClientID:   g.ClientID,
-		CreateIP:   g.CreateIP,
-		UseIP:      g.UseIP,
-		Used:       g.Used,
+		ID:         grant.ID,
+		SourceType: grant.SourceType,
+		SourceID:   grant.SourceID,
+		CreatedAt:  grant.CreatedAt,
+		UsedAt:     grant.UsedAt,
+		Scopes:     pqarrays.StringArray(grant.Scopes),
+		AccountID:  grant.AccountID,
+		ProfileID:  grant.ProfileID,
+		ClientID:   grant.ClientID,
+		CreateIP:   grant.CreateIP,
+		UseIP:      grant.UseIP,
+		Used:       grant.Used,
 	}
 }

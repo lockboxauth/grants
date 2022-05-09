@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -38,17 +38,17 @@ func NewFactory(db *sql.DB) *Factory {
 }
 
 // NewStorer creates a new Storer and returns it.
-func (f *Factory) NewStorer(ctx context.Context) (grants.Storer, error) {
-	u, err := url.Parse(os.Getenv(TestConnStringEnvVar))
+func (f *Factory) NewStorer(ctx context.Context) (grants.Storer, error) { //nolint:ireturn // interface requires returning an interface
+	connString, err := url.Parse(os.Getenv(TestConnStringEnvVar))
 	if err != nil {
 		log.Printf("Error parsing %s as a URL: %+v\n", TestConnStringEnvVar, err)
 		return nil, err
 	}
-	if u.Scheme != "postgres" {
-		return nil, errors.New(TestConnStringEnvVar + " must begin with postgres://")
+	if connString.Scheme != "postgres" {
+		return nil, fmt.Errorf("%s must begin with postgres://", TestConnStringEnvVar) //nolint:goerr113 // error isn't handled, only for display
 	}
 
-	tableSuffix, err := uuid.GenerateRandomBytes(6)
+	tableSuffix, err := uuid.GenerateRandomBytes(6) //nolint:gomnd // number is arbitrary, not magic
 	if err != nil {
 		log.Printf("Error generating UUID: %+v\n", err)
 		return nil, err
@@ -61,8 +61,8 @@ func (f *Factory) NewStorer(ctx context.Context) (grants.Storer, error) {
 		return nil, err
 	}
 
-	u.Path = "/" + table
-	newConn, err := sql.Open("postgres", u.String())
+	connString.Path = "/" + table
+	newConn, err := sql.Open("postgres", connString.String())
 	if err != nil {
 		log.Println("Accidentally orphaned", table, "it will need to be cleaned up manually")
 		return nil, err
@@ -99,9 +99,5 @@ func (f *Factory) TeardownStorers() error {
 			return err
 		}
 	}
-	err := f.db.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return f.db.Close()
 }

@@ -20,7 +20,7 @@ func ApplyMigrations(connection *sql.DB, direction migrate.MigrationDirection) e
 
 // MigrationsSource returns a migrate.MigrationSource to apply the migrations
 // for this storer.
-func MigrationsSource() migrate.MigrationSource {
+func MigrationsSource() *migrate.EmbedFileSystemMigrationSource {
 	return &migrate.EmbedFileSystemMigrationSource{
 		FileSystem: migrations,
 		Root:       "sql",

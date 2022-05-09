@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 
 	memdb "github.com/hashicorp/go-memdb"
 
@@ -66,25 +67,25 @@ func NewStorer() (*Storer, error) {
 // with the same ID alreday exists in the Storer, or am
 // ErrGrantSourceAlreadyExists error if a Grant with the
 // same SourceType and SourceID already exists in the Storer.
-func (s *Storer) CreateGrant(ctx context.Context, g grants.Grant) error {
+func (s *Storer) CreateGrant(_ context.Context, grant grants.Grant) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	exists, err := txn.First("grant", "id", g.ID)
+	exists, err := txn.First("grant", "id", grant.ID)
 	if err != nil {
 		return err
 	}
 	if exists != nil {
 		return grants.ErrGrantAlreadyExists
 	}
-	exists, err = txn.First("grant", "source", g.SourceType, g.SourceID)
+	exists, err = txn.First("grant", "source", grant.SourceType, grant.SourceID)
 	if err != nil {
 		return err
 	}
 	if exists != nil {
 		return grants.ErrGrantSourceAlreadyUsed
 	}
-	err = txn.Insert("grant", &g)
+	err = txn.Insert("grant", &grant)
 	if err != nil {
 		return err
 	}
@@ -101,11 +102,11 @@ func (s *Storer) CreateGrant(ctx context.Context, g grants.Grant) error {
 // the Storer with an ID matching the Grant propery of the
 // GrantUse is already marked as used, an ErrGrantAlreadyUsed
 // error will be returned.
-func (s *Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.Grant, error) {
+func (s *Storer) ExchangeGrant(_ context.Context, use grants.GrantUse) (grants.Grant, error) {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	grant, err := txn.First("grant", "id", g.Grant)
+	grant, err := txn.First("grant", "id", use.Grant)
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -113,13 +114,17 @@ func (s *Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.G
 		return grants.Grant{}, grants.ErrGrantNotFound
 	}
 
-	if grant.(*grants.Grant).Used {
+	found, ok := grant.(*grants.Grant)
+	if !ok || found == nil {
+		return grants.Grant{}, fmt.Errorf("unexpected result type %T", grant) //nolint:goerr113 // error for logging, not handling
+	}
+	newGrant := *found
+	if newGrant.Used {
 		return grants.Grant{}, grants.ErrGrantAlreadyUsed
 	}
-	newGrant := *grant.(*grants.Grant)
 	newGrant.Used = true
-	newGrant.UseIP = g.IP
-	newGrant.UsedAt = g.Time
+	newGrant.UseIP = use.IP
+	newGrant.UsedAt = use.Time
 
 	err = txn.Insert("grant", &newGrant)
 	if err != nil {
@@ -133,7 +138,7 @@ func (s *Storer) ExchangeGrant(ctx context.Context, g grants.GrantUse) (grants.G
 // GetGrant retrieves the Grant specified by `id` from the
 // Storer. If no Grant has an ID matching the `id` parameter,
 // an ErrGrantNotFound error is returned.
-func (s *Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
+func (s *Storer) GetGrant(_ context.Context, id string) (grants.Grant, error) {
 	txn := s.db.Txn(false)
 	grant, err := txn.First("grant", "id", id)
 	if err != nil {
@@ -144,13 +149,18 @@ func (s *Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) 
 	}
 	txn.Commit()
 
-	return *grant.(*grants.Grant), nil
+	res, ok := grant.(*grants.Grant)
+	if !ok || res == nil {
+		return grants.Grant{}, fmt.Errorf("unexpected result type %T", grant) //nolint:goerr113 // error for logging, not handling
+	}
+
+	return *res, nil
 }
 
 // GetGrantBySource retrieves the Grant specified by `sourceType` and
 // `sourceID` from the Storer. If no Grant has a source type and source ID
 // matching these parameters, an ErrGrantNotFound error is returned.
-func (s *Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID string) (grants.Grant, error) {
+func (s *Storer) GetGrantBySource(_ context.Context, sourceType, sourceID string) (grants.Grant, error) {
 	txn := s.db.Txn(false)
 	grant, err := txn.First("grant", "source", sourceType, sourceID)
 	if err != nil {
@@ -161,5 +171,10 @@ func (s *Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID stri
 	}
 	txn.Commit()
 
-	return *grant.(*grants.Grant), nil
+	res, ok := grant.(*grants.Grant)
+	if !ok || res == nil {
+		return grants.Grant{}, fmt.Errorf("unexpected result type %T", grant) //nolint:goerr113 // error for logging, not handling
+	}
+
+	return *res, nil
 }

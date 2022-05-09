@@ -1,6 +1,8 @@
 package grants
 
-import "context"
+import (
+	"context"
+)
 
 // Storer is the interface that Grants are persisted and used through.
 type Storer interface {
