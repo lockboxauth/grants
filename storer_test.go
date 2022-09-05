@@ -86,15 +86,16 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndExchangeGrant",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndExchangeGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
@@ -117,6 +118,38 @@ func TestCreateAndExchangeGrant(t *testing.T) {
 }
 
 func TestCreateAndGetGrant(t *testing.T) {
+	t.Parallel()
+
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		grant := grants.Grant{
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndExchangeGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
+		}
+		err := storer.CreateGrant(ctx, grant)
+		if err != nil {
+			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+		}
+
+		resp, err := storer.GetGrant(ctx, grant.ID)
+		if err != nil {
+			t.Errorf("Unexpected error retrieving grant from %T: %+v\n", storer, err)
+		}
+		expectation := grant
+		if diff := cmp.Diff(expectation, resp); diff != "" {
+			t.Errorf("Unexpected diff (-wanted, +got): %s", diff)
+		}
+	})
+}
+
+func TestCreateAndGetRootGrant(t *testing.T) {
 	t.Parallel()
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
@@ -152,15 +185,16 @@ func TestCreateAndGetGrantBySource(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndGetGrantBySource",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndGetGrantBySource",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
@@ -183,15 +217,16 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndExchangeUsedGrant",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndExchangeUsedGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
@@ -205,6 +240,39 @@ func TestCreateAndExchangeUsedGrant(t *testing.T) {
 
 		_, err = storer.ExchangeGrant(ctx, grants.GrantUse{Grant: grant.ID, IP: "5.6.7.8", Time: time.Now().Round(time.Millisecond)})
 		if !errors.Is(err, grants.ErrGrantAlreadyUsed) {
+			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyUsed, storer, err)
+		}
+	})
+}
+
+func TestCreateAndExchangeRevokedGrant(t *testing.T) {
+	t.Parallel()
+
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		grant := grants.Grant{
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndExchangeRevokedGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
+		}
+		err := storer.CreateGrant(ctx, grant)
+		if err != nil {
+			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+		}
+
+		_, err = storer.RevokeGrant(ctx, grant.ID)
+		if err != nil {
+			t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
+		}
+
+		_, err = storer.ExchangeGrant(ctx, grants.GrantUse{Grant: grant.ID, IP: "5.6.7.8", Time: time.Now().Round(time.Millisecond)})
+		if !errors.Is(err, grants.ErrGrantRevoked) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyUsed, storer, err)
 		}
 	})
@@ -252,15 +320,16 @@ func TestCreateDuplicateGrant(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateDuplicateGrant",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateDuplicateGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
@@ -281,15 +350,16 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateDuplicateSourceGrant",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateDuplicateSourceGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
@@ -301,6 +371,83 @@ func TestCreateDuplicateSourceGrant(t *testing.T) {
 		err = storer.CreateGrant(ctx, grant)
 		if !errors.Is(err, grants.ErrGrantSourceAlreadyUsed) {
 			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantSourceAlreadyUsed, storer, err)
+		}
+	})
+}
+
+func TestCreateAndRevokeGrant(t *testing.T) {
+	t.Parallel()
+
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		grant := grants.Grant{
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndRevokeGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
+		}
+		err := storer.CreateGrant(ctx, grant)
+		if err != nil {
+			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+		}
+
+		resp, err := storer.RevokeGrant(ctx, grant.ID)
+		if err != nil {
+			t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
+		}
+		expectation := grant
+		expectation.Revoked = true
+		if diff := cmp.Diff(expectation, resp); diff != "" {
+			t.Errorf("Unexpected diff (-wanted, +got): %s", diff)
+		}
+	})
+}
+
+func TestCreateAndRevokeUsedGrant(t *testing.T) {
+	t.Parallel()
+
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		grant := grants.Grant{
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndRevokeUsedGrant",
+			AncestorIDs: pqarrays.StringArray{uuidOrFail(t), uuidOrFail(t)},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
+		}
+		err := storer.CreateGrant(ctx, grant)
+		if err != nil {
+			t.Errorf("Unexpected error creating grant in %T: %+v\n", storer, err)
+		}
+
+		_, err = storer.ExchangeGrant(ctx, grants.GrantUse{Grant: grant.ID, IP: "1.2.3.4", Time: time.Now().Round(time.Millisecond)})
+		if err != nil {
+			t.Errorf("Unexpected error exchanging grant in %T: %+v\n", storer, err)
+		}
+
+		_, err = storer.RevokeGrant(ctx, grant.ID)
+		if !errors.Is(err, grants.ErrGrantAlreadyUsed) {
+			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantAlreadyUsed, storer, err)
+		}
+	})
+}
+
+func TestRevokeNonExistentGrant(t *testing.T) {
+	t.Parallel()
+
+	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
+		_, err := storer.RevokeGrant(ctx, uuidOrFail(t))
+		if !errors.Is(err, grants.ErrGrantNotFound) {
+			t.Errorf("Expected error to be %v, %T returned %v\n", grants.ErrGrantNotFound, storer, err)
 		}
 	})
 }
