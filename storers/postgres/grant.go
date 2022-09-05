@@ -11,18 +11,20 @@ import (
 // Grant is a representation of a Grant
 // suitable for storage in our Storer.
 type Grant struct {
-	ID         string
-	SourceType string
-	SourceID   string
-	CreatedAt  time.Time
-	UsedAt     time.Time
-	Scopes     pqarrays.StringArray
-	AccountID  string
-	ProfileID  string
-	ClientID   string
-	CreateIP   string
-	UseIP      string
-	Used       bool
+	ID          string
+	SourceType  string
+	SourceID    string
+	AncestorIDs pqarrays.StringArray
+	CreatedAt   time.Time
+	UsedAt      time.Time
+	Scopes      pqarrays.StringArray
+	AccountID   string
+	ProfileID   string
+	ClientID    string
+	CreateIP    string
+	UseIP       string
+	Used        bool
+	Revoked     bool
 }
 
 // GetSQLTableName allows us to use Grant with
@@ -33,34 +35,38 @@ func (Grant) GetSQLTableName() string {
 
 func fromPostgres(grant Grant) grants.Grant {
 	return grants.Grant{
-		ID:         grant.ID,
-		SourceType: grant.SourceType,
-		SourceID:   grant.SourceID,
-		CreatedAt:  grant.CreatedAt,
-		UsedAt:     grant.UsedAt,
-		Scopes:     []string(grant.Scopes),
-		AccountID:  grant.AccountID,
-		ProfileID:  grant.ProfileID,
-		ClientID:   grant.ClientID,
-		CreateIP:   grant.CreateIP,
-		UseIP:      grant.UseIP,
-		Used:       grant.Used,
+		ID:          grant.ID,
+		SourceType:  grant.SourceType,
+		SourceID:    grant.SourceID,
+		AncestorIDs: []string(grant.AncestorIDs),
+		CreatedAt:   grant.CreatedAt,
+		UsedAt:      grant.UsedAt,
+		Scopes:      []string(grant.Scopes),
+		AccountID:   grant.AccountID,
+		ProfileID:   grant.ProfileID,
+		ClientID:    grant.ClientID,
+		CreateIP:    grant.CreateIP,
+		UseIP:       grant.UseIP,
+		Used:        grant.Used,
+		Revoked:     grant.Revoked,
 	}
 }
 
 func toPostgres(grant grants.Grant) Grant {
 	return Grant{
-		ID:         grant.ID,
-		SourceType: grant.SourceType,
-		SourceID:   grant.SourceID,
-		CreatedAt:  grant.CreatedAt,
-		UsedAt:     grant.UsedAt,
-		Scopes:     pqarrays.StringArray(grant.Scopes),
-		AccountID:  grant.AccountID,
-		ProfileID:  grant.ProfileID,
-		ClientID:   grant.ClientID,
-		CreateIP:   grant.CreateIP,
-		UseIP:      grant.UseIP,
-		Used:       grant.Used,
+		ID:          grant.ID,
+		SourceType:  grant.SourceType,
+		SourceID:    grant.SourceID,
+		AncestorIDs: pqarrays.StringArray(grant.AncestorIDs),
+		CreatedAt:   grant.CreatedAt,
+		UsedAt:      grant.UsedAt,
+		Scopes:      pqarrays.StringArray(grant.Scopes),
+		AccountID:   grant.AccountID,
+		ProfileID:   grant.ProfileID,
+		ClientID:    grant.ClientID,
+		CreateIP:    grant.CreateIP,
+		UseIP:       grant.UseIP,
+		Used:        grant.Used,
+		Revoked:     grant.Revoked,
 	}
 }

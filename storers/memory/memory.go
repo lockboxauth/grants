@@ -122,6 +122,9 @@ func (s *Storer) ExchangeGrant(_ context.Context, use grants.GrantUse) (grants.G
 	if newGrant.Used {
 		return grants.Grant{}, grants.ErrGrantAlreadyUsed
 	}
+	if newGrant.Revoked {
+		return grants.Grant{}, grants.ErrGrantRevoked
+	}
 	newGrant.Used = true
 	newGrant.UseIP = use.IP
 	newGrant.UsedAt = use.Time
@@ -177,4 +180,44 @@ func (s *Storer) GetGrantBySource(_ context.Context, sourceType, sourceID string
 	}
 
 	return *res, nil
+}
+
+// RevokeGrant marks the Grant specified by `id` as revoked, meaning it can no
+// longer be exchanged. If no Grant matches the specified ID, an
+// ErrGrantNotFound error is returned. If the Grant matching the ID is already
+// marked as revoked in the Storer, an ErrGrantRevoked error is returned. If
+// the Grant matching the ID is already marked as used in the Storer, an
+// ErrGrantAlreadyUsed error is returned.
+func (s *Storer) RevokeGrant(_ context.Context, id string) (grants.Grant, error) {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	grant, err := txn.First("grant", "id", id)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	if grant == nil {
+		return grants.Grant{}, grants.ErrGrantNotFound
+	}
+
+	found, ok := grant.(*grants.Grant)
+	if !ok || found == nil {
+		return grants.Grant{}, fmt.Errorf("unexpected result type %T", grant) //nolint:goerr113 // error for logging, not handling
+	}
+	newGrant := *found
+	if newGrant.Used {
+		return grants.Grant{}, grants.ErrGrantAlreadyUsed
+	}
+	if newGrant.Revoked {
+		return grants.Grant{}, grants.ErrGrantRevoked
+	}
+	newGrant.Revoked = true
+
+	err = txn.Insert("grant", &newGrant)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	txn.Commit()
+
+	return newGrant, nil
 }

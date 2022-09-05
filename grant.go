@@ -11,6 +11,9 @@ var (
 	// ErrGrantAlreadyUsed is returned when a grant is being used, but has already been used. This
 	// usually indicates a replay attack.
 	ErrGrantAlreadyUsed = errors.New("grant already used, cannot be exchanged again")
+	// ErrGrantRevoked is returned when a grant is being used, but has been
+	// revoked. This usually indicates a leaked credential being exploited.
+	ErrGrantRevoked = errors.New("grant was revoked, cannot be exchanged")
 	// ErrGrantNotFound is returned when a grant is being used or referenced, but does not exist in
 	// the Storer being used. This usually indicates an invalid Grant is being presented.
 	ErrGrantNotFound = errors.New("grant not found")
@@ -24,18 +27,20 @@ var (
 
 // Grant represents a user's authorization for the use of their account to some client.
 type Grant struct {
-	ID         string    // a unique ID
-	SourceType string    // the type of the source used to identify the user
-	SourceID   string    // the ID of the source used to identify the user; should be unique across grants
-	CreatedAt  time.Time // when the authorization was granted
-	UsedAt     time.Time // when the authorization was exchanged for a session
-	Scopes     []string  // the scopes of access the user granted
-	AccountID  string    // the ID of the account that was used to grant access
-	ProfileID  string    // the unique ID representing the user
-	ClientID   string    // the client access was granted to
-	CreateIP   string    // the IP the user granted access from
-	UseIP      string    // the IP the access was exchanged for a session from
-	Used       bool      // whether the access has been exchanged for a session or not
+	ID          string    // a unique ID
+	SourceType  string    // the type of the source used to identify the user
+	SourceID    string    // the ID of the source used to identify the user; should be unique across grants
+	AncestorIDs []string  // the IDs of any Grants that led to the creation of this grant, e.g. through refresh
+	CreatedAt   time.Time // when the authorization was granted
+	UsedAt      time.Time // when the authorization was exchanged for a session
+	Scopes      []string  // the scopes of access the user granted
+	AccountID   string    // the ID of the account that was used to grant access
+	ProfileID   string    // the unique ID representing the user
+	ClientID    string    // the client access was granted to
+	CreateIP    string    // the IP the user granted access from
+	UseIP       string    // the IP the access was exchanged for a session from
+	Used        bool      // whether the access has been exchanged for a session or not
+	Revoked     bool      // whether the grant has been manually revoked or not
 }
 
 // GrantUse represents the exchange of a Grant for a session.

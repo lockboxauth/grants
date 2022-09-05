@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 
@@ -68,6 +69,7 @@ func exchangeGrantUpdateSQL(use grants.GrantUse) *pan.Query {
 	query.Flush(", ").Where()
 	query.Comparison(grant, "ID", "=", use.Grant)
 	query.Comparison(grant, "Used", "=", false)
+	query.Comparison(grant, "Revoked", "=", false)
 	return query.Flush(" AND ")
 }
 
@@ -141,11 +143,105 @@ func (s Storer) ExchangeGrant(ctx context.Context, use grants.GrantUse) (grants.
 	if grant.ID == "" {
 		return fromPostgres(grant), grants.ErrGrantNotFound
 	}
-	// if the grant does exist in the Storer, the only reason
-	// the exchange wouldn't have used it would be because it
-	// has already been used. In that case, we want an
-	// ErrGrantAlreadyUsed error.
-	return grants.Grant{}, grants.ErrGrantAlreadyUsed
+	// if the Grant exists but we didn't update it, either it was already
+	// used or was revoked.
+	if grant.Used {
+		return grants.Grant{}, grants.ErrGrantAlreadyUsed
+	}
+	if grant.Revoked {
+		return grants.Grant{}, grants.ErrGrantRevoked
+	}
+	return grants.Grant{}, fmt.Errorf("error exchanging %s: %w", use.Grant, errors.New("unexpected error, no grants updated, grant found, grant not used or revoked"))
+}
+
+func revokeGrantUpdateSQL(id string) *pan.Query {
+	var grant Grant
+	query := pan.New("UPDATE " + pan.Table(grant) + " SET ")
+	query.Comparison(grant, "Revoked", "=", true)
+	query.Flush(", ").Where()
+	query.Comparison(grant, "ID", "=", id)
+	query.Comparison(grant, "Used", "=", false)
+	query.Comparison(grant, "Revoked", "=", false)
+	return query.Flush(" AND ")
+}
+
+func revokeGrantGetSQL(id string) *pan.Query {
+	var grant Grant
+	query := pan.New("SELECT " + pan.Columns(grant).String() + " FROM " + pan.Table(grant))
+	query.Where()
+	query.Comparison(grant, "ID", "=", id)
+	return query.Flush(" ")
+}
+
+// RevokeGrant marks the Grant specified by id as revoked in the Storer, making
+// in unable to be exchanged. If no Grant has an ID matching the passed id, an
+// ErrGrantNotFound error is returned. If the Grant in the Storer with an ID
+// matching the passed id is already marked as used, an ErrGrantAlreadyUsed
+// error will be returned. If the Grant in the Storer with an ID matching the
+// passed id is already marked as revoked, an ErrGrantRevoked error will be
+// returned.
+func (s Storer) RevokeGrant(ctx context.Context, id string) (grants.Grant, error) {
+	log := yall.FromContext(ctx).WithField("grant", id)
+	// revoke the grant
+	query := revokeGrantUpdateSQL(id)
+	queryStr, err := query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running update portion of grant revoke query")
+	result, err := s.db.Exec(queryStr, query.Args()...)
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	// figure out how many rows exchanging affected
+	count, err := result.RowsAffected()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("rows_affected", count).Debug("successfully executed query")
+	query = revokeGrantGetSQL(id)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant revoke query")
+	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	defer closeRows(ctx, rows)
+	var grant Grant
+	for rows.Next() {
+		err = pan.Unmarshal(rows, &grant)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return fromPostgres(grant), err
+	}
+	// if we affected one or more rows, the revoke was
+	// successful, return the grant and we're done
+	if count >= 1 {
+		return fromPostgres(grant), nil
+	}
+	// if we affected fewer than one rows, the grant
+	// wasn't successful.
+
+	// if the grant doesn't exist in the Storer, that's an
+	// ErrGrantNotFound error
+	if grant.ID == "" {
+		return fromPostgres(grant), grants.ErrGrantNotFound
+	}
+	// if the Grant exists but we didn't update it, either it was already
+	// used or was revoked.
+	if grant.Used {
+		return grants.Grant{}, grants.ErrGrantAlreadyUsed
+	}
+	if grant.Revoked {
+		return grants.Grant{}, grants.ErrGrantRevoked
+	}
+	return grants.Grant{}, fmt.Errorf("error revoking %s: %w", id, errors.New("unexpected error, no grants updated, grant found, grant not used or revoked"))
 }
 
 func getGrantSQL(id string) *pan.Query {
