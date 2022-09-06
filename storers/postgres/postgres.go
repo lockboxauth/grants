@@ -36,18 +36,39 @@ func createGrantSQL(grant Grant) *pan.Query {
 	return pan.Insert(grant)
 }
 
+func createGrantAncestorsSQL(ancestors []GrantAncestor) *pan.Query {
+	namer := make([]pan.SQLTableNamer, 0, len(ancestors))
+	for _, anc := range ancestors {
+		namer = append(namer, anc)
+	}
+	return pan.Insert(namer...)
+}
+
 // CreateGrant inserts the passed Grant into the Storer,
 // returning an ErrGrantAlreadyExists error if a Grant
 // with the same ID alreday exists in the Storer, or am
 // ErrGrantSourceAlreadyExists error if a Grant with the
 // same SourceType and SourceID already exists in the Storer.
-func (s Storer) CreateGrant(_ context.Context, grant grants.Grant) error {
-	query := createGrantSQL(toPostgres(grant))
-	queryStr, err := query.PostgreSQLString()
+func (s Storer) CreateGrant(ctx context.Context, grant grants.Grant) error {
+	grantQuery := createGrantSQL(toPostgres(grant))
+	grantQueryStr, err := grantQuery.PostgreSQLString()
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(queryStr, query.Args()...)
+	var ancestorQuery *pan.Query
+	var ancestorQueryStr string
+	if len(grant.AncestorIDs) > 0 {
+		ancestorQuery = createGrantAncestorsSQL(ancestorsFromIDs(grant.ID, grant.AncestorIDs))
+		ancestorQueryStr, err = ancestorQuery.PostgreSQLString()
+		if err != nil {
+			return err
+		}
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, grantQueryStr, grantQuery.Args()...)
 	var pqErr *pq.Error
 	if errors.As(err, &pqErr) {
 		switch pqErr.Constraint {
@@ -57,6 +78,19 @@ func (s Storer) CreateGrant(_ context.Context, grant grants.Grant) error {
 			err = grants.ErrGrantSourceAlreadyUsed
 		}
 	}
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if ancestorQuery != nil && ancestorQueryStr != "" {
+		_, err = tx.ExecContext(ctx, ancestorQueryStr, ancestorQuery.Args()...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err = tx.Commit()
 	return err
 }
 
@@ -81,6 +115,14 @@ func exchangeGrantGetSQL(id string) *pan.Query {
 	return query.Flush(" ")
 }
 
+func getAncestorsSQL(id string) *pan.Query {
+	var ancestor GrantAncestor
+	query := pan.New("SELECT " + pan.Columns(ancestor).String() + " FROM " + pan.Table(ancestor))
+	query.Where()
+	query.Comparison(ancestor, "GrantID", "=", id)
+	return query.Flush(" ")
+}
+
 // ExchangeGrant applies the GrantUse to the Storer, marking
 // the Grant in the Storer with an ID matching the Grant
 // property of the GrantUse as used and recording metadata
@@ -99,7 +141,7 @@ func (s Storer) ExchangeGrant(ctx context.Context, use grants.GrantUse) (grants.
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running update portion of grant exchange query")
-	result, err := s.db.Exec(queryStr, query.Args()...)
+	result, err := s.db.ExecContext(ctx, queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -115,7 +157,7 @@ func (s Storer) ExchangeGrant(ctx context.Context, use grants.GrantUse) (grants.
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant exchange query")
-	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	rows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -128,6 +170,28 @@ func (s Storer) ExchangeGrant(ctx context.Context, use grants.GrantUse) (grants.
 		}
 	}
 	if err = rows.Err(); err != nil {
+		return fromPostgres(grant), err
+	}
+	query = getAncestorsSQL(use.Grant)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get ancestors portion of grant exchange query")
+	ancestorRows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	defer closeRows(ctx, ancestorRows)
+	for ancestorRows.Next() {
+		var ancestor GrantAncestor
+		err = pan.Unmarshal(ancestorRows, &ancestor)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+		grant.Ancestors = append(grant.Ancestors, ancestor)
+	}
+	if err = ancestorRows.Err(); err != nil {
 		return fromPostgres(grant), err
 	}
 	// if we affected one or more rows, the exchange was
@@ -189,7 +253,7 @@ func (s Storer) RevokeGrant(ctx context.Context, id string) (grants.Grant, error
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running update portion of grant revoke query")
-	result, err := s.db.Exec(queryStr, query.Args()...)
+	result, err := s.db.ExecContext(ctx, queryStr, query.Args()...)
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -205,7 +269,7 @@ func (s Storer) RevokeGrant(ctx context.Context, id string) (grants.Grant, error
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get portion of grant revoke query")
-	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	rows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -218,6 +282,28 @@ func (s Storer) RevokeGrant(ctx context.Context, id string) (grants.Grant, error
 		}
 	}
 	if err = rows.Err(); err != nil {
+		return fromPostgres(grant), err
+	}
+	query = getAncestorsSQL(id)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get ancestors portion of grant revoke query")
+	ancestorRows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	defer closeRows(ctx, ancestorRows)
+	for ancestorRows.Next() {
+		var ancestor GrantAncestor
+		err = pan.Unmarshal(ancestorRows, &ancestor)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+		grant.Ancestors = append(grant.Ancestors, ancestor)
+	}
+	if err = ancestorRows.Err(); err != nil {
 		return fromPostgres(grant), err
 	}
 	// if we affected one or more rows, the revoke was
@@ -263,7 +349,7 @@ func (s Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant query")
-	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	rows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -280,6 +366,28 @@ func (s Storer) GetGrant(ctx context.Context, id string) (grants.Grant, error) {
 	}
 	if grant.ID == "" {
 		return fromPostgres(grant), grants.ErrGrantNotFound
+	}
+	query = getAncestorsSQL(id)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get ancestors portion of get grant query")
+	ancestorRows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	defer closeRows(ctx, ancestorRows)
+	for ancestorRows.Next() {
+		var ancestor GrantAncestor
+		err = pan.Unmarshal(ancestorRows, &ancestor)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+		grant.Ancestors = append(grant.Ancestors, ancestor)
+	}
+	if err = ancestorRows.Err(); err != nil {
+		return fromPostgres(grant), err
 	}
 	return fromPostgres(grant), nil
 }
@@ -305,7 +413,7 @@ func (s Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID strin
 		return grants.Grant{}, err
 	}
 	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running get grant by source query")
-	rows, err := s.db.Query(queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	rows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
 	if err != nil {
 		return grants.Grant{}, err
 	}
@@ -322,6 +430,28 @@ func (s Storer) GetGrantBySource(ctx context.Context, sourceType, sourceID strin
 	}
 	if grant.ID == "" {
 		return fromPostgres(grant), grants.ErrGrantNotFound
+	}
+	query = getAncestorsSQL(grant.ID)
+	queryStr, err = query.PostgreSQLString()
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	log.WithField("query", queryStr).WithField("query_args", query.Args()).Debug("running ancestors portion of get grant by source query")
+	ancestorRows, err := s.db.QueryContext(ctx, queryStr, query.Args()...) //nolint:sqlclosecheck // the closeRows helper isn't picked up
+	if err != nil {
+		return grants.Grant{}, err
+	}
+	defer closeRows(ctx, ancestorRows)
+	for ancestorRows.Next() {
+		var ancestor GrantAncestor
+		err = pan.Unmarshal(ancestorRows, &ancestor)
+		if err != nil {
+			return fromPostgres(grant), err
+		}
+		grant.Ancestors = append(grant.Ancestors, ancestor)
+	}
+	if err = ancestorRows.Err(); err != nil {
+		return fromPostgres(grant), err
 	}
 	return fromPostgres(grant), nil
 }
