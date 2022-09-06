@@ -154,15 +154,16 @@ func TestCreateAndGetRootGrant(t *testing.T) {
 
 	runTest(t, func(t *testing.T, storer grants.Storer, ctx context.Context) {
 		grant := grants.Grant{
-			ID:         uuidOrFail(t),
-			SourceType: "manual",
-			SourceID:   "TestCreateAndExchangeGrant",
-			UsedAt:     time.Now().Add(time.Hour).Round(time.Millisecond),
-			Scopes:     pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
-			ProfileID:  "tester",
-			AccountID:  "test123",
-			ClientID:   "testrunner",
-			CreateIP:   "192.168.1.2",
+			ID:          uuidOrFail(t),
+			SourceType:  "manual",
+			SourceID:    "TestCreateAndExchangeGrant",
+			AncestorIDs: []string{},
+			UsedAt:      time.Now().Add(time.Hour).Round(time.Millisecond),
+			Scopes:      pqarrays.StringArray{"https://scopes.impractical.co/test", "https://scopes.impractical.co/other/test"},
+			ProfileID:   "tester",
+			AccountID:   "test123",
+			ClientID:    "testrunner",
+			CreateIP:    "192.168.1.2",
 		}
 		err := storer.CreateGrant(ctx, grant)
 		if err != nil {
