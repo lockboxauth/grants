@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/lib/pq v1.10.7
-	github.com/rubenv/sql-migrate v1.1.2
+	github.com/rubenv/sql-migrate v1.2.0
 	impractical.co/pqarrays v0.1.0
 	yall.in v0.0.8
 )
