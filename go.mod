@@ -2,7 +2,7 @@ module lockbox.dev/grants
 
 require (
 	darlinggo.co/pan v0.2.0
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/lib/pq v1.10.7
